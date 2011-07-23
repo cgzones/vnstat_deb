@@ -1,0 +1,144 @@
+vnstat (1.11-1) unstable; urgency=low
+
+  * QA upload.
+  * Upload to unstable.
+  * New upstream release.
+  * debian/patches/adapt_to_kfreebsd.diff:
+    - Removed, applied upstream.
+  * debian/patches/debian_build_system.diff,
+    debian/patches/fix_manpages.diff:
+    - Refresh patches for new upstream release.
+  * debian/control:
+    - Set Maintainer to Debian QA group.
+    - Remove DMUA field.
+    - Remove Vcs-* fields.
+    - Bump Standards-Version to 3.9.2; no changes required.
+
+ -- Luca Falavigna <dktrkranz@debian.org>  Sat, 23 Jul 2011 17:02:51 +0200
+
+vnstat (1.10-2) experimental; urgency=low
+
+  * Update debian/copyright.
+  * debian/control: add Vcs-* fields.
+  * Enable functionality for GNU/kFreeBSD.  Thanks to Mats Erik Andersson
+    <mats.andersson@gisladisker.se> for the patch.  Closes: #608963
+  * Bump Standards-Version to 3.9.1; no changes required.
+
+ -- Iulian Udrea <iulian@ubuntu.com>  Wed, 05 Jan 2011 12:48:43 +0000
+
+vnstat (1.10-1) unstable; urgency=low
+
+  * New maintainer.
+  * Ack non-maintainer uploads.
+  * debian/control:
+    - Bump Standards-Version to 3.8.4; no changes required.
+  * Update debian/copyright to machine-readable format
+    (http://dep.debian.net/deps/dep5/).
+  * Rewrite debian/rules.
+  * Switch to 3.0 (quilt) source format.
+
+ -- Iulian Udrea <iulian@ubuntu.com>  Tue, 20 Apr 2010 16:52:54 +0100
+
+vnstat (1.10-0.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * New upstream release. (Closes: #561297)
+    + Fix manpages - present options and elements in alphabetical order.
+      (Closes: #561304)
+  * debian/patches:
+    + refreshed fix_manpages.diff
+  * debian/README.source:
+    + add it because policy requires it.
+  * debian/control:
+    + Add ${misc:Depends} to Depends to remove lintian warning.
+  * Update copyright information.
+
+ -- Ilya Pravdivtsev <kabus1917@gmail.com>  Tue, 19 Jan 2010 00:06:14 +0300
+
+vnstat (1.9-0.2) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * New upstream release.
+    + Fix vnstat collects data from the wrong interface. (Closes: #512566)
+    + Cron entry is no longer used. (Closes: #338818)
+  * debian/patches:
+    + updated to new version.
+    + added fix_manpages.diff to remove lintian warnings
+      "manpage-has-bad-whatis-entry".
+  * debian/control:
+    + remove Vcs-* fields.
+    + added libgd2-xpm-dev to build-depends.
+  * Standards-Version was bumped to 3.8.3
+  * Upgrading package to debhelper 7.
+  * Add package for vnstati.
+  * Cron script replaced by init script.
+  * Remove /etc/network/if-*.d/vnstat and /etc/ppp/ip-*.d/vnstat in preinst.
+    These scripts aren't needed when the daemon is used.
+
+ -- Ilya Pravdivtsev <kabus1917@gmail.com>  Mon, 28 Sep 2009 07:24:51 +0400
+
+vnstat (1.6-1) unstable; urgency=low
+
+  * New upstream release. (Closes: #456407)
+    + Fix vnstat does not show any traffic. (Closes: #372943)
+    + Fix 64-bit kernel produces "not enough data yet".
+      (Closes: #300671)
+    + Fix rx value not parsed if interface name is longer than 6
+      characters. (Closes: #443168)
+    + Fix impossibly large spikes of traffic. (Closes: #317350)
+  * Switch from dpatch to quilt.
+    + Create debian_build_system.diff by refreshing
+      old 01_debian_build_system.dpatch.
+    + Remove no longer needed 02_fix_manpage.dpatch.
+  * Bump Standards-Version to 3.7.3.
+  * Add the Homepage field and remove it from the long description.
+  * Add the Vcs-Git/Vcs-Browser fields.
+  * Add the DM-Upload-Allowed field.
+  * Fix lintian warning "debian-rules-ignores-make-clean-error
+    line 33".
+
+ -- Aurélien GÉRÔME <ag@roxor.cx>  Tue, 05 Feb 2008 13:55:32 +0100
+
+vnstat (1.4-4) unstable; urgency=low
+
+  * New maintainer. (Closes: #394800)
+  * Conform to policy by using "-Wall -g -O2" as CFLAGS.
+  * Add dpatch support.
+  * Add debian/watch file.
+
+ -- Aurélien GÉRÔME <ag@roxor.cx>  Mon, 23 Oct 2006 15:05:16 +0200
+
+vnstat (1.4-3) unstable; urgency=low
+
+  * QA Upload.
+  * ACK NMU (Closes: #336168).
+  * Set maintainer to Debian QA Group.
+  * Set debhelper compatibility to 5.
+  * Set Standards-Version to 3.7.2.
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Mon, 23 Oct 2006 18:29:53 +1000
+
+vnstat (1.4-2.1) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Build on any architecture (Closes: #336168).
+
+ -- Luk Claes <luk@debian.org>  Sun, 29 Jan 2006 10:11:49 +0100
+
+vnstat (1.4-2) unstable; urgency=low
+
+  * Minor script enhancements (Closes: #240341)
+
+ -- Teemu Toivola <vergo@humdi.net>  Wed,  9 Jun 2004 12:29:28 +0300
+
+vnstat (1.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Teemu Toivola <vergo@humdi.net>  Fri, 26 Mar 2004 22:29:11 +0200
+
+vnstat (1.3-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Teemu Toivola <vergo@humdi.net>  Tue, 16 Mar 2004 00:10:54 +0200

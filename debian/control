@@ -1,0 +1,27 @@
+Source: vnstat
+Section: net
+Priority: optional
+Maintainer: Debian QA Group <packages@qa.debian.org>
+Build-Depends: debhelper (>= 7), libgd2-xpm-dev
+Standards-Version: 3.9.2
+Homepage: http://humdi.net/vnstat/
+
+Package: vnstat
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: vnstati
+Description: console-based network traffic monitor
+ vnStat is a network traffic monitor for Linux. It keeps a log of
+ daily network traffic for the selected interface(s). vnStat is not
+ a packet sniffer. The traffic information is analyzed from the /proc
+ filesystem, so vnStat can be used without root permissions.
+
+Package: vnstati
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, vnstat (= ${binary:Version})
+Description: image output support for vnStat
+ vnStati provides image output support for statistics collected using
+ vnStat. The image file format is limited to png. All basic outputs
+ of vnStat are supported excluding live traffic features.
+ The image can be outputted either to a file or to standard output.
+
