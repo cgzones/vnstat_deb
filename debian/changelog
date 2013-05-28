@@ -1,3 +1,9 @@
+vnstat (1.11-2) UNRELEASED; urgency=low
+
+  * Adopt the package. (Closes: #632840)
+
+ -- Felix Geyer <fgeyer@debian.org>  Tue, 28 May 2013 17:06:47 +0200
+
 vnstat (1.11-1) unstable; urgency=low
 
   * QA upload.
