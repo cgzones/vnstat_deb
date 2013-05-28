@@ -1,21 +1,5 @@
-Index: vnstat-1.11/Makefile
-===================================================================
---- vnstat-1.11.orig/Makefile	2011-07-23 16:58:42.378468228 +0200
-+++ vnstat-1.11/Makefile	2011-07-23 16:59:09.922468212 +0200
-@@ -2,12 +2,7 @@
- SBIN = $(DESTDIR)/usr/sbin
- MAN = $(DESTDIR)/usr/share/man
- 
--# bin and man dirs for *BSD
--BIN_BSD = $(DESTDIR)/usr/local/bin
--SBIN_BSD = $(DESTDIR)/usr/local/sbin
--MAN_BSD = $(DESTDIR)/usr/local/man
--
--default: vnstat
-+default: all
- 
- vnstat:
- 	+make -C src
+--- a/Makefile
++++ b/Makefile
 @@ -22,30 +18,12 @@
  install:
  	@echo "Installing vnStat..."
@@ -47,7 +31,7 @@ Index: vnstat-1.11/Makefile
  # install default config if such doesn't exist
  	@if [ ! -f "$(DESTDIR)/etc/vnstat.conf" ]; \
  	then echo "Installing config to $(DESTDIR)/etc/vnstat.conf"; \
-@@ -69,27 +47,6 @@
+@@ -69,23 +47,6 @@
  	then echo install -m 644 man/vnstati.1 $(MAN)/man1; \
  	install -m 644 man/vnstati.1 $(MAN)/man1; \
  	fi
@@ -68,94 +52,9 @@ Index: vnstat-1.11/Makefile
 -	@if [ -f $(MAN)/man1/vnstat.conf.1 ]; \
 -	then rm -f $(MAN)/man1/vnstat.conf.1; \
 -	fi
--
--	@echo " "
--	@echo "No startup script or cron entry has been installed. See the"
--	@echo "INSTALL document for instructions on how to enable vnStat."
  
- uninstall:
- 	@echo "Uninstalling vnStat..."
-@@ -109,80 +66,3 @@
- 	rm -f $(DESTDIR)/etc/vnstat.conf
- 	rm -f $(DESTDIR)/etc/ppp/ip-up.d/vnstat
- 	rm -f $(DESTDIR)/etc/ppp/ip-down.d/vnstat
--
--bsdinstall:
--	@echo "Installing vnStat (BSD)..."
--
--# check that system isn't Linux
--	@if [ `uname` = "Linux" ]; \
--	then echo "This is a Linux system. You shouldn't be using 'bsdinstall'"; \
--	false; \
--	fi
--
--# check that there's something to install
--	@if [ ! -f "src/vnstat" ] || [ ! -f "src/vnstatd" ]; \
--	then echo "Nothing to install, run make first."; \
--	false; \
--	fi
--
--# install binaries
--	install -d -m 755 $(DESTDIR)/var/db/vnstat
--	install -s -m 755 src/vnstat $(BIN_BSD)
--	install -s -m 755 src/vnstatd $(SBIN_BSD)
--
--	@if [ -f "src/vnstati" ]; \
--	then echo install -s -m 755 src/vnstati $(BIN_BSD); \
--	install -s -m 755 src/vnstati $(BIN_BSD); \
--	fi
--
--# install default config if such doesn't exist
--	@if [ ! -f $(DESTDIR)/etc/vnstat.conf ]; \
--	then echo "Installing config to $(DESTDIR)/etc/vnstat.conf"; \
--	install -d -m 755 $(DESTDIR)/etc; \
--	install -m 644 cfg/vnstat.conf $(DESTDIR)/etc/vnstat.conf; \
--	sed -e 's/lib/db/g' $(DESTDIR)/etc/vnstat.conf >$(DESTDIR)/etc/vnstat.conf.bsd; \
--	mv -f $(DESTDIR)/etc/vnstat.conf.bsd $(DESTDIR)/etc/vnstat.conf; \
--	fi
--
--# update man page	
--	install -m 644 man/vnstat.1 $(MAN_BSD)/man1
--	install -m 644 man/vnstatd.1 $(MAN_BSD)/man1
--	install -m 644 man/vnstat.conf.5 $(MAN_BSD)/man5
--	gzip -f9 $(MAN_BSD)/man1/vnstat.1
--	gzip -f9 $(MAN_BSD)/man1/vnstatd.1
--	gzip -f9 $(MAN_BSD)/man5/vnstat.conf.5
--	@if [ -f "src/vnstati" ]; \
--	then echo install -m 644 man/vnstati.1 $(MAN_BSD)/man1; \
--	install -m 644 man/vnstati.1 $(MAN_BSD)/man1; \
--	echo gzip -f9 $(MAN_BSD)/man1/vnstati.1; \
--	gzip -f9 $(MAN_BSD)/man1/vnstati.1; \
--	fi
--
--# remove vnstat.conf.1 is such exists in the wrong place
--	@if [ -f $(MAN_BSD)/man1/vnstat.conf.1.gz ]; \
--	then rm -f $(MAN_BSD)/man1/vnstat.conf.1.gz; \
--	fi
--	@if [ -f $(MAN_BSD)/man1/vnstat.conf.1 ]; \
--	then rm -f $(MAN_BSD)/man1/vnstat.conf.1; \
--	fi
--
--	@echo " "
--	@echo "No startup script or cron entry has been installed. See the"
--	@echo "INSTALL_BSD document for instructions on how to enable vnStat."
--
--bsduninstall:
--	@echo "Uninstalling vnStat (BSD)..."
--	@echo
--	@echo "Note: this will also remove the database directory"
--	@echo "including any database located there."
--	@echo
--	@echo "Press CTRL-C within 10 seconds to abort."
--	@sleep 10
--	rm -fr $(DESTDIR)/var/db/vnstat
--	rm -f $(BIN_BSD)/vnstat
--	rm -f $(BIN_BSD)/vnstati
--	rm -f $(SBIN_BSD)/vnstatd
--	rm -f $(MAN_BSD)/man1/vnstat*
--	rm -f $(MAN_BSD)/man5/vnstat*
--	rm -f $(DESTDIR)/etc/vnstat.conf
--	@echo "A possible cron entry needs to be removed manually if such exists."
+ 	@echo " "
+ 	@echo "No startup script or cron entry has been installed. See the"
 --- a/src/Makefile
 +++ b/src/Makefile
 @@ -0,5 +0,5 @@

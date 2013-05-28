@@ -4,6 +4,7 @@ vnstat (1.11-2) UNRELEASED; urgency=low
   * Make sure all build flags are passed to the compiler.
     - Switch to debhelper compat level 9.
     - Update debian_build_system.diff
+  * Drop unnecessary changes to Makefile in debian_build_system.diff.
 
  -- Felix Geyer <fgeyer@debian.org>  Tue, 28 May 2013 17:06:47 +0200
 
