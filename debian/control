@@ -2,7 +2,7 @@ Source: vnstat
 Section: net
 Priority: optional
 Maintainer: Felix Geyer <fgeyer@debian.org>
-Build-Depends: debhelper (>= 7), libgd2-xpm-dev
+Build-Depends: debhelper (>= 9), libgd2-xpm-dev
 Standards-Version: 3.9.2
 Homepage: http://humdi.net/vnstat/
 

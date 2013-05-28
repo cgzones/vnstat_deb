@@ -2,11 +2,9 @@ Index: vnstat-1.11/Makefile
 ===================================================================
 --- vnstat-1.11.orig/Makefile	2011-07-23 16:58:42.378468228 +0200
 +++ vnstat-1.11/Makefile	2011-07-23 16:59:09.922468212 +0200
-@@ -2,19 +2,15 @@
- BIN = $(DESTDIR)/usr/bin
+@@ -2,12 +2,7 @@
  SBIN = $(DESTDIR)/usr/sbin
  MAN = $(DESTDIR)/usr/share/man
-+CFLAGS =
  
 -# bin and man dirs for *BSD
 -BIN_BSD = $(DESTDIR)/usr/local/bin
@@ -17,15 +15,7 @@ Index: vnstat-1.11/Makefile
 +default: all
  
  vnstat:
--	+make -C src
-+	+make -C src CFLAGS="$(CFLAGS)"
- 
- all:
--	+make -C src all
-+	+make -C src all CFLAGS="$(CFLAGS)"
- 
- clean:
- 	make -C src clean
+ 	+make -C src
 @@ -22,30 +18,12 @@
  install:
  	@echo "Installing vnStat..."
@@ -166,3 +156,12 @@ Index: vnstat-1.11/Makefile
 -	rm -f $(MAN_BSD)/man5/vnstat*
 -	rm -f $(DESTDIR)/etc/vnstat.conf
 -	@echo "A possible cron entry needs to be removed manually if such exists."
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -0,5 +0,5 @@
+ CC = gcc
+-CFLAGS = -O2
++CFLAGS ?= -O2
+ LDLIBS = -lm
+ OBJS = vnstat.o ifinfo.o dbxml.o dbshow.o dbaccess.o dbmerge.o common.o misc.o cfg.o traffic.o
+ DOBJS = vnstatd.o ifinfo.o dbaccess.o dbcache.o common.o misc.o cfg.o
