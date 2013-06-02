@@ -13,6 +13,7 @@ vnstat (1.11-2) UNRELEASED; urgency=low
   * Run the vnstat daemon as its own user.
     - Create the new user and chown the database in postinst.
     - Add pidfile_path.diff to update the pid file path in the config file.
+  * Build-depend on libgd-dev instead of libgd2-xpm-dev.
 
  -- Felix Geyer <fgeyer@debian.org>  Tue, 28 May 2013 17:06:47 +0200
 
