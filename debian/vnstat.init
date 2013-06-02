@@ -11,10 +11,11 @@
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DESC="vnStat daemon"
 NAME=vnstatd
+PIDFILE=/run/vnstat/vnstat.pid
 DAEMON=/usr/sbin/$NAME
-DAEMON_ARGS="-d"
-PIDFILE=/var/run/vnstat.pid
+DAEMON_ARGS="-d --pidfile $PIDFILE"
 SCRIPTNAME=/etc/init.d/vnstat
+USER=vnstat
 
 . /lib/lsb/init-functions
 
@@ -24,21 +25,26 @@ SCRIPTNAME=/etc/init.d/vnstat
 case "$1" in
 	start)
 		log_daemon_msg "Starting $DESC" "$NAME"
-		start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- \
-			$DAEMON_ARGS
+		if [ ! -d /run/vnstat ]; then
+			mkdir /run/vnstat
+		fi
+		chown $USER:$USER /run/vnstat
+		start-stop-daemon --start --quiet --oknodo --chuid $USER \
+			--exec $DAEMON -- $DAEMON_ARGS
 		log_end_msg $?
 		;;
 	stop)
 		log_daemon_msg "Stopping $DESC" "$NAME"
 		start-stop-daemon --stop --quiet --oknodo --retry=TERM/15/KILL/5 --pidfile $PIDFILE \
 			--name $NAME
-		log_end_msg $?
+		status=$?
 		rm -f $PIDFILE
+		log_end_msg $?
 		;;
 	status)
 		pidofproc -p $PIDFILE $DAEMON >/dev/null
 		status=$?
-		
+
 		if [ $status -eq 0 ]; then
 			log_success_msg "$DESC is running"
 		else
@@ -49,7 +55,7 @@ case "$1" in
 	reload|force-reload)
 		log_daemon_msg "Reloading $DESC configuration..."
 		start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
-		log_end_msg 0
+		log_end_msg $?
 		;;
 	restart)
 		$0 stop
@@ -61,5 +67,3 @@ case "$1" in
 		exit 1
 		;;
 esac
-
-exit 0

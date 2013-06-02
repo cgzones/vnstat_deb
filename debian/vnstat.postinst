@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ]; then
+  # run on upgrade and new package installation
+  if dpkg --compare-versions "$2" lt "1.11-2~"; then
+    if ! getent passwd vnstat >/dev/null; then
+      adduser --system --group --quiet --no-create-home --home /var/lib/vnstat vnstat
+    fi
+
+    chown root:vnstat /etc/vnstat.conf
+    chown -R vnstat:vnstat /var/lib/vnstat
+  fi
+fi
+
+#DEBHELPER#

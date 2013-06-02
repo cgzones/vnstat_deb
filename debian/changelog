@@ -10,6 +10,9 @@ vnstat (1.11-2) UNRELEASED; urgency=low
   * Add Vcs control fields.
   * Bump Standards-Version to 3.9.4, no changes needed.
   * Drop vnstat.preinst as upgrades from version 1.6 aren't supported anymore.
+  * Run the vnstat daemon as its own user.
+    - Create the new user and chown the database in postinst.
+    - Add pidfile_path.diff to update the pid file path in the config file.
 
  -- Felix Geyer <fgeyer@debian.org>  Tue, 28 May 2013 17:06:47 +0200
 

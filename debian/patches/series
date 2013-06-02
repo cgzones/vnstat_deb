@@ -1,2 +1,3 @@
 debian_build_system.diff
 fix_manpages.diff
+pidfile_path.diff

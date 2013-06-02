@@ -1,0 +1,14 @@
+Description: Adjust PidFile path to the new location.
+Author: Felix Geyer <fgeyer@debian.org>
+
+--- vnstat-1.11.orig/cfg/vnstat.conf
++++ vnstat-1.11/cfg/vnstat.conf
+@@ -93,7 +93,7 @@ UseLogging 2
+ LogFile "/var/log/vnstat.log"
+ 
+ # file used as daemon pid / lock file
+-PidFile "/var/run/vnstat.pid"
++PidFile "/run/vnstat/vnstat.pid"
+ 
+ 
+ # vnstati
