@@ -1,6 +1,9 @@
 vnstat (1.12-1) UNRELEASED; urgency=low
 
   * New upstream release.
+    - Fix: Live traffic meter occasionally showing higher minimum than average
+      in end statistics. (Closes: #687812)
+    - Fix: Setting locale when none is specified in config. (Closes: #606397)
   * Refresh patches.
   * Build-depend on check for the new test suite.
   * Install the upstream systemd service file. (Closes: #635751)
