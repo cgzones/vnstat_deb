@@ -1,5 +1,3 @@
-(Updated 29.5.2011 for version 1.11)
-
 
 What is vnStat
 ::::::::::::::
@@ -30,9 +28,9 @@ Available options and documentation
  man pages are available with more detailed descriptions:
  
     vnstat          general documentation and console query parameters
-	vnstatd         daemon documentation
-	vnstati         image output documentation
-	vnstat.conf     configuration file
+    vnstatd         daemon documentation
+    vnstati         image output documentation
+    vnstat.conf     configuration file
 
 
 Usage tips
@@ -57,11 +55,7 @@ Contacting the author
  email:    Teemu Toivola <tst at iki dot fi>
  irc:      Vergo (IRCNet)
 
+ git:      https://github.com/vergoh/vnstat
+
  The current version of vnStat is always available from 
  http://humdi.net/vnstat/
-
- Discussion forum
- http://forums.humdi.net/
-
- Email alerts about new versions are available by subscription at
- http://freshmeat.net/projects/vnstat/

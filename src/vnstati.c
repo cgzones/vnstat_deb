@@ -1,5 +1,5 @@
 /*
-vnStat image output - Copyright (c) 2007-11 Teemu Toivola <tst@iki.fi>
+vnStat image output - Copyright (c) 2007-2014 Teemu Toivola <tst@iki.fi>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 				debug = 1;
 			} else if (strcmp(argv[currentarg],"--config")==0) {
 				if (currentarg+1<argc) {
-					strncpy(cfgfile, argv[currentarg+1], 512);
+					strncpy_nt(cfgfile, argv[currentarg+1], 512);
 					cfgfile[511] = '\0';
 					if (debug)
 						printf("Used config file: %s\n", cfgfile);
@@ -65,10 +65,12 @@ int main(int argc, char *argv[])
 	} else {
 		if (getenv("LC_ALL")) {
 			setlocale(LC_ALL, getenv("LC_ALL"));
+		} else {
+			setlocale(LC_ALL, "");
 		}
 	}
-	strncpy(interface, cfg.iface, 32);
-	strncpy(dirname, cfg.dbdir, 512);
+	strncpy_nt(interface, cfg.iface, 32);
+	strncpy_nt(dirname, cfg.dbdir, 512);
 	filename[0] = '\0';
 	current = time(NULL);
 
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
 			help = 1;
 		} else if ((strcmp(argv[currentarg],"-i")==0) || (strcmp(argv[currentarg],"--iface"))==0) {
 			if (currentarg+1<argc) {
-				strncpy(interface, argv[currentarg+1], 32);
+				strncpy_nt(interface, argv[currentarg+1], 32);
 				interface[31] = '\0';
 				if (debug)
 					printf("Used interface: \"%s\"\n", interface);
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
 			}
 		} else if ((strcmp(argv[currentarg],"-o")==0) || (strcmp(argv[currentarg],"--output"))==0) {
 			if (currentarg+1<argc) {
-				strncpy(filename, argv[currentarg+1], 512);
+				strncpy_nt(filename, argv[currentarg+1], 512);
 				filename[511] = '\0';
 				if (debug)
 					printf("Output file: \"%s\"\n", filename);
@@ -101,7 +103,7 @@ int main(int argc, char *argv[])
 			} else {
 				printf("Error: Filename for -o missing.\n");
 				return 1;
-			}			
+			}
 		} else if ((strcmp(argv[currentarg],"-c")==0) || (strcmp(argv[currentarg],"--cache"))==0) {
 			if (currentarg+1<argc && isdigit(argv[currentarg+1][0])) {
 				cache = atoi(argv[currentarg+1]);
@@ -146,7 +148,7 @@ int main(int argc, char *argv[])
 			}
 		} else if ((strcmp(argv[currentarg],"--dbdir"))==0) {
 			if (currentarg+1<argc) {
-				strncpy(dirname, argv[currentarg+1], 512);
+				strncpy_nt(dirname, argv[currentarg+1], 512);
 				dirname[511] = '\0';
 				if (debug)
 					printf("DatabaseDir: \"%s\"\n", dirname);
@@ -170,7 +172,7 @@ int main(int argc, char *argv[])
 		} else if (strcmp(argv[currentarg],"--config")==0) {
 			/* config has already been parsed earlier so nothing to do here */
 			currentarg++;
-			continue;				
+			continue;
 		} else if ((strcmp(argv[currentarg],"-D")==0) || (strcmp(argv[currentarg],"--debug"))==0) {
 			debug = 1;
 		} else if ((strcmp(argv[currentarg],"-d")==0) || (strcmp(argv[currentarg],"--days"))==0) {
@@ -284,13 +286,13 @@ int main(int argc, char *argv[])
 	/* open file */	
 	if (filename[0]!='-') {
 		if ((pngout = fopen(filename, "w"))==NULL) {
-			printf("Error: Opening file \"%s\" for output failed.\n", filename);
+			printf("Error: Opening file \"%s\" for output failed: %s\n", filename, strerror(errno));
 			return 1;
 		}
 	} else {
 		/* output to stdout */
 		if ((pngout = fdopen(1, "w"))==NULL) {
-			printf("Error: Opening stdout for output failed.\n");
+			printf("Error: Opening stdout for output failed: %s\n", strerror(errno));
 			return 1;
 		}
 	}

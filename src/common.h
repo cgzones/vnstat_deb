@@ -19,6 +19,9 @@
 #include <inttypes.h>
 #include <syslog.h>
 #include <sys/statvfs.h>
+#include <pwd.h>
+#include <grp.h>
+#include <libgen.h>
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__) || defined(__FreeBSD_kernel__)
 #include <sys/param.h>
@@ -30,6 +33,13 @@
 #include <ifaddrs.h>
 #endif
 
+/* OpenBSD and NetBSD don't support the ' character (decimal conversion) in printf formatting */
+#if !defined(__OpenBSD__) && !defined(__NetBSD__)
+#define DECCONV "'"
+#else
+#define DECCONV
+#endif
+
 /*
 
 Note! These are only the default values for settings
@@ -38,11 +48,14 @@ and most can be changed later from the config file.
 */
 
 /* location of the database directory */
+#ifndef DATABASEDIR
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
 #define DATABASEDIR "/var/db/vnstat"
 #else
 #define DATABASEDIR "/var/lib/vnstat"
 #endif
+#endif
+#define DATABASEFILE "vnstat.db"
 
 /* on which day should months change */
 #define MONTHROTATE 1
@@ -84,7 +97,9 @@ and most can be changed later from the config file.
 #define RATEUNIT 1
 
 /* default interface */
+#ifndef DEFIFACE
 #define DEFIFACE "eth0"
+#endif
 
 /* default locale */
 #define LOCALE "-"
@@ -104,7 +119,7 @@ and most can be changed later from the config file.
 
 /* default query mode */
 /* 0 = normal, 1 = days, 2 = months, 3 = top10 */
-/* 4 = dumpdb, 5 = short, 6 = weeks, 7 = hours */
+/* 4 = exportdb, 5 = short, 6 = weeks, 7 = hours */
 /* 8 = xml */
 #define DEFQMODE 0
 
@@ -129,7 +144,7 @@ and most can be changed later from the config file.
 #define DBVERSION 3
 
 /* version string */
-#define VNSTATVERSION "1.11"
+#define VNSTATVERSION "1.12"
 
 /* xml format version */
 /* 1 = 1.7- */
@@ -139,15 +154,22 @@ and most can be changed later from the config file.
 #define ONELINEVERSION 1
 
 /* integer limits */
-#define FP32 4294967295ULL
-#define FP64 18446744073709551615ULL
+#define MAX32 4294967295ULL
+#define MAX64 18446744073709551615ULL
 
 /* sampletime in seconds for live traffic */
 /* don't use values below 2 */
 #define LIVETIME 2
 
 /* /proc/net/dev */
+#ifndef PROCNETDEV
 #define PROCNETDEV "/proc/net/dev"
+#endif
+
+/* /sys/class/net */
+#ifndef SYSCLASSNET
+#define SYSCLASSNET "/sys/class/net"
+#endif
 
 /* daemon defaults */
 #define UPDATEINTERVAL 30
@@ -156,8 +178,10 @@ and most can be changed later from the config file.
 #define OFFSAVEINTERVAL 30
 #define SAVESTATUS 1
 #define USELOGGING 2
-#define LOGFILE "/var/log/vnstat.log"
-#define PIDFILE "/var/run/vnstat.pid"
+#define CREATEDIRS 1
+#define UPDATEFILEOWNER 1
+#define LOGFILE "/var/log/vnstat/vnstat.log"
+#define PIDFILE "/var/run/vnstat/vnstat.pid"
 
 /* no transparency by default */
 #define TRANSBG 0
@@ -188,7 +212,9 @@ typedef struct {
 	short unit, ostyle, rateunit, bvar, qmode, sampletime, hourlyrate, summaryrate;
 	short monthrotate, maxbw, flock, spacecheck, traflessday, transbg, slayout;
 	char logfile[512], pidfile[512];
+	char daemonuser[33], daemongroup[33];
 	short updateinterval, pollinterval, saveinterval, offsaveinterval, savestatus, uselogging;
+	short createdirs, updatefileowner;
 } CFG;
 
 /* internal interface information structure */
@@ -255,6 +281,12 @@ int printe(PrintType type);
 int logprint(PrintType type);
 int dmonth(int month);
 uint32_t mosecs(void);
+uint64_t countercalc(const uint64_t *a, const uint64_t *b);
+void addtraffic(uint64_t *destmb, int *destkb, const uint64_t srcmb, const int srckb);
+uint64_t mbkbtokb(uint64_t mb, uint64_t kb);
+char *strncpy_nt(char *dest, const char *src, size_t n);
+int isnumeric(const char *s);
+void panicexit(const char *sourcefile, const int sourceline);
 
 /* global variables */
 DATA data;

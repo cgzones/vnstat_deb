@@ -5,43 +5,41 @@
 void showdb(int qmode)
 {
 	if (data.totalrx+data.totaltx==0 && data.totalrxk+data.totaltxk==0 && qmode!=4) {
-
 		printf(" %s: Not enough data available yet.\n", data.interface);
+		return;
+	}
 
-	} else {
-
-		switch(qmode) {
-			case 0:
-				showsummary();
-				break;
-			case 1:
-				showdays();
-				break;
-			case 2:
-				showmonths();
-				break;
-			case 3:
-				showtop();
-				break;
-			case 4:
-				dumpdb();
-				break;
-			case 5:
-				showshort();
-				break;
-			case 6:
-				showweeks();
-				break;
-			case 7:
-				showhours();
-				break;
-			case 9:
-				showoneline();
-				break;
-			default:
-				printf("Error: Not such query mode: %d\n", qmode);
-				break;
-		}
+	switch(qmode) {
+		case 0:
+			showsummary();
+			break;
+		case 1:
+			showdays();
+			break;
+		case 2:
+			showmonths();
+			break;
+		case 3:
+			showtop();
+			break;
+		case 4:
+			exportdb();
+			break;
+		case 5:
+			showshort();
+			break;
+		case 6:
+			showweeks();
+			break;
+		case 7:
+			showhours();
+			break;
+		case 9:
+			showoneline();
+			break;
+		default:
+			printf("Error: Not such query mode: %d\n", qmode);
+			break;
 	}
 }
 
@@ -50,14 +48,13 @@ void showsummary(void)
 	struct tm *d;
 	char datebuff[16];
 	char daytemp[32], daytemp2[32];
-	uint64_t e_rx, e_tx, t_rx, t_tx;
-	int t_rxk, t_txk;
+	uint64_t e_rx, e_tx;
 	time_t current, yesterday;
 
 	current=time(NULL);
 	yesterday=current-86400;
 
-	e_rx=e_tx=t_rx=t_tx=t_rxk=t_txk=0;
+	e_rx=e_tx=0;
 
 	/* get formated date for today */
 	d=localtime(&current);
@@ -69,7 +66,7 @@ void showsummary(void)
 
 	/* change daytemp to today if formated days match */
 	if (strcmp(datebuff, daytemp2)==0) {
-		strncpy(daytemp2, "    today", 32);
+		strncpy_nt(daytemp2, "    today", 32);
 	}
 
 	if (data.lastupdated) {
@@ -143,7 +140,7 @@ void showsummary(void)
 	printf(" | %s", getvalue(data.month[0].rx+data.month[0].tx, data.month[0].rxk+data.month[0].txk, 11, 1));
 	if (cfg.ostyle >= 2) {
 		printf(" | %s", getrate(data.month[0].rx+data.month[0].tx, data.month[0].rxk+data.month[0].txk, mosecs(), 14));
-	}	
+	}
 	printf("\n");
 
 	indent(5);
@@ -181,14 +178,14 @@ void showsummary(void)
 
 	/* change daytemp to yesterday if formated days match */
 	if (strcmp(datebuff, daytemp)==0) {
-		strncpy(daytemp, "yesterday", 32);
+		strncpy_nt(daytemp, "yesterday", 32);
 	}
 
 	/* use database update time for estimates */
 	d=localtime(&data.lastupdated);
 	if ( data.day[0].rx==0 || data.day[0].tx==0 || (d->tm_hour*60+d->tm_min)==0 ) {
 		e_rx=e_tx=0;
-	} else {	
+	} else {
 		e_rx=((data.day[0].rx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 		e_tx=((data.day[0].tx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 	}
@@ -257,14 +254,13 @@ void showshort(void)
 	struct tm *d;
 	char datebuff[16];
 	char daytemp[32], daytemp2[32];
-	uint64_t e_rx, e_tx, t_rx, t_tx;
-	int t_rxk, t_txk;
+	uint64_t e_rx, e_tx;
 	time_t current, yesterday;
 
 	current=time(NULL);
 	yesterday=current-86400;
 
-	e_rx=e_tx=t_rx=t_tx=t_rxk=t_txk=0;
+	e_rx=e_tx=0;
 
 	if (strcmp(data.interface, data.nick)==0) {
 		if (data.active)
@@ -322,7 +318,7 @@ void showshort(void)
 
 	/* change daytemp to today if formated days match */
 	if (strcmp(datebuff, daytemp2)==0) {
-		strncpy(daytemp2, "today", 32);
+		strncpy_nt(daytemp2, "today", 32);
 	}
 
 	/* use database update time for estimates */
@@ -347,7 +343,7 @@ void showshort(void)
 
 	/* change daytemp to yesterday if formated days match */
 	if (strcmp(datebuff, daytemp)==0) {
-		strncpy(daytemp, "yesterday", 32);
+		strncpy_nt(daytemp, "yesterday", 32);
 	}
 
 	if (data.day[1].date!=0) {
@@ -370,10 +366,10 @@ void showdays(void)
 	int i, used;
 	struct tm *d;
 	char datebuff[16];
-	uint64_t e_rx, e_tx, t_rx, t_tx, max;
-	int t_rxk, t_txk;
+	uint64_t e_rx, e_tx, t_rx, max;
+	int t_rxk;
 
-	e_rx=e_tx=t_rx=t_tx=t_rxk=t_txk=0;
+	e_rx=e_tx=t_rx=t_rxk=0;
 
 	printf("\n");
 	if (strcmp(data.interface, data.nick)==0) {
@@ -466,7 +462,7 @@ void showdays(void)
 		d=localtime(&data.lastupdated);
 		if ( data.day[0].rx==0 || data.day[0].tx==0 || (d->tm_hour*60+d->tm_min)==0 ) {
 			e_rx=e_tx=0;
-		} else {				
+		} else {
 			e_rx=((data.day[0].rx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 			e_tx=((data.day[0].tx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 		}
@@ -488,10 +484,10 @@ void showmonths(void)
 	int i, used;
 	struct tm *d;
 	char datebuff[16];
-	uint64_t e_rx, e_tx, t_rx, t_tx, max;
-	int t_rxk, t_txk;
+	uint64_t e_rx, e_tx, t_rx, max;
+	int t_rxk;
 
-	e_rx=e_tx=t_rx=t_tx=t_rxk=t_txk=0;
+	e_rx=e_tx=t_rx=t_rxk=0;
 
 	printf("\n");
 	if (strcmp(data.interface, data.nick)==0) {
@@ -514,7 +510,7 @@ void showmonths(void)
 		if (cfg.ostyle != 0) {
 			printf("-------------------------+-------------+---------------------------------------\n");
 		} else {
-			printf("-------------------------+-------------+------------\n");		
+			printf("-------------------------+-------------+------------\n");
 		}
 	}
 
@@ -529,7 +525,7 @@ void showmonths(void)
 			if (t_rxk>=1024) {
 				t_rx+=t_rxk/1024;
 				t_rxk-=(t_rxk/1024)*1024;
-			}					
+			}
 
 			t_rx=(t_rx*1024)+t_rxk;
 
@@ -576,7 +572,7 @@ void showmonths(void)
 		} else {
 			printf("-------------------------+-------------+------------\n");
 		}
-	}			
+	}
 	if (used!=0) {
 		/* use database update time for estimates */
 		d=localtime(&data.month[0].month);
@@ -604,10 +600,10 @@ void showtop(void)
 	int i, used;
 	struct tm *d;
 	char datebuff[16];
-	uint64_t t_rx, t_tx, max;
-	int t_rxk, t_txk;
+	uint64_t t_rx, max;
+	int t_rxk;
 
-	t_rx=t_tx=t_rxk=t_txk=0;
+	t_rx=t_rxk=0;
 
 	printf("\n");
 	if (strcmp(data.interface, data.nick)==0) {
@@ -712,7 +708,7 @@ void showweeks(void)
 			printf(" %s (%s)  /  weekly\n\n", data.nick, data.interface);
 		else
 			printf(" %s (%s) [disabled]  /  weekly\n\n", data.nick, data.interface);
-	}	
+	}
 
 	indent(3);
 	if (cfg.ostyle >= 2) {
@@ -932,11 +928,7 @@ void showhours(void)
 	/* hours and traffic */
 	for (i=0;i<=7;i++) {
 		s=tmax+i+1;
-#if !defined(__OpenBSD__)
-		snprintf(matrix[15+i], 81, "%02d %'10"PRIu64" %'10"PRIu64"    %02d %'10"PRIu64" %'10"PRIu64"    %02d %'10"PRIu64" %'10"PRIu64"",s%24, data.hour[s%24].rx, data.hour[s%24].tx, (s+8)%24, data.hour[(s+8)%24].rx, data.hour[(s+8)%24].tx, (s+16)%24, data.hour[(s+16)%24].rx, data.hour[(s+16)%24].tx);
-#else
-		snprintf(matrix[15+i], 81, "%02d %10"PRIu64" %10"PRIu64"    %02d %10"PRIu64" %10"PRIu64"    %02d %10"PRIu64" %10"PRIu64"",s%24, data.hour[s%24].rx, data.hour[s%24].tx, (s+8)%24, data.hour[(s+8)%24].rx, data.hour[(s+8)%24].tx, (s+16)%24, data.hour[(s+16)%24].rx, data.hour[(s+16)%24].tx);
-#endif
+		snprintf(matrix[15+i], 81, "%02d %"DECCONV"10"PRIu64" %"DECCONV"10"PRIu64"    %02d %"DECCONV"10"PRIu64" %"DECCONV"10"PRIu64"    %02d %"DECCONV"10"PRIu64" %"DECCONV"10"PRIu64"",s%24, data.hour[s%24].rx, data.hour[s%24].tx, (s+8)%24, data.hour[(s+8)%24].rx, data.hour[(s+8)%24].tx, (s+16)%24, data.hour[(s+16)%24].rx, data.hour[(s+16)%24].tx);
 	}
 
 	/* clean \0 */
@@ -946,7 +938,7 @@ void showhours(void)
 				matrix[i][j]=' ';
 			}
 		}
-	} 	
+	}
 
 	/* show matrix (yes, the last line isn't shown) */
 	for (i=0;i<23;i++) {
@@ -954,7 +946,7 @@ void showhours(void)
 			printf("%c",matrix[i][j]);
 		}
 		printf("\n");
-	} 	
+	}
 
 }
 
@@ -1007,7 +999,7 @@ void showoneline(void)
 	printf("%s\n", getvalue(data.totalrx+data.totaltx, data.totalrxk+data.totaltxk, 1, 1));
 }
 
-void dumpdb(void)
+void exportdb(void)
 {
 	int i;
 
@@ -1040,7 +1032,7 @@ void dumpdb(void)
 
 	for (i=0;i<=23;i++) {
 		printf("h;%d;%u;%"PRIu64";%"PRIu64"\n", i, (unsigned int)data.hour[i].date, data.hour[i].rx, data.hour[i].tx);
-	}			
+	}
 }
 
 void showbar(uint64_t rx, int rxk, uint64_t tx, int txk, uint64_t max, int len)
@@ -1085,7 +1077,7 @@ void showbar(uint64_t rx, int rxk, uint64_t tx, int txk, uint64_t max, int len)
 			}
 			for (i=0;i<l;i++) {
 				printf("%c", cfg.txchar[0]);
-			}		
+			}
 		}
 
 	}
