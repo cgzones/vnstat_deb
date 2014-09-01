@@ -3,8 +3,7 @@ vnstat (1.12-1) UNRELEASED; urgency=low
   * New upstream release.
   * Refresh patches.
   * Build-depend on check for the new test suite.
-  * Add a systemd service file. Thanks to Michael Stapelberg for the patch.
-    (Closes: #635751)
+  * Install the upstream systemd service file. (Closes: #635751)
 
  -- Felix Geyer <fgeyer@debian.org>  Sat, 13 Jul 2013 09:48:00 +0200
 
