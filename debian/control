@@ -2,7 +2,7 @@ Source: vnstat
 Section: net
 Priority: optional
 Maintainer: Felix Geyer <fgeyer@debian.org>
-Build-Depends: debhelper (>= 9), libgd-dev, dh-systemd (>= 1.4)
+Build-Depends: debhelper (>= 9), libgd-dev, check, dh-systemd (>= 1.4)
 Standards-Version: 3.9.4
 Homepage: http://humdi.net/vnstat/
 Vcs-Git: git://anonscm.debian.org/collab-maint/vnstat.git
