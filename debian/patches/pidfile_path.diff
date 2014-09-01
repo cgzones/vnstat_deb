@@ -3,11 +3,11 @@ Author: Felix Geyer <fgeyer@debian.org>
 
 --- vnstat-1.11.orig/cfg/vnstat.conf
 +++ vnstat-1.11/cfg/vnstat.conf
-@@ -93,7 +93,7 @@ UseLogging 2
- LogFile "/var/log/vnstat.log"
+@@ -105,7 +105,7 @@ UseLogging 2
+ LogFile "/var/log/vnstat/vnstat.log"
  
  # file used as daemon pid / lock file
--PidFile "/var/run/vnstat.pid"
+-PidFile "/var/run/vnstat/vnstat.pid"
 +PidFile "/run/vnstat/vnstat.pid"
  
  

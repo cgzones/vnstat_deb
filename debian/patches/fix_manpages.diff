@@ -1,19 +1,6 @@
-Index: vnstat-1.10/man/vnstat.conf.5
-===================================================================
---- vnstat-1.10.orig/man/vnstat.conf.5	2010-01-19 00:44:29.000000000 +0300
-+++ vnstat-1.10/man/vnstat.conf.5	2010-01-19 00:52:02.000000000 +0300
-@@ -15,8 +15,8 @@
- .BR vnstatd (1)
- all use the same configuration file for storing configuration data.
- Some of the settings are common for all three programs. The file
--contains keyword-argument pairs, one per line. Lines starting with
--'#' and empty lines are interpreted as comments and not processed.
-+contains keyword-argument pairs, one per line. Lines starting with '#'
-+and empty lines are interpreted as comments and not processed.
- Arguments may optionally be enclosed in double quotes (") in order
- to represent arguments containing spaces. Arguments can be padded
- with spaces or tabulator characters. A hardcoded default value
-@@ -108,7 +108,7 @@
+--- vnstat-1.10.orig/man/vnstat.conf.5
++++ vnstat-1.10/man/vnstat.conf.5
+@@ -113,7 +113,7 @@
  
  .TP
  .BI Sampletime
@@ -22,29 +9,3 @@ Index: vnstat-1.10/man/vnstat.conf.5
  
  .TP
  .BI TrafficlessDays
-Index: vnstat-1.10/man/vnstatd.1
-===================================================================
---- vnstat-1.10.orig/man/vnstatd.1	2010-01-19 00:52:57.000000000 +0300
-+++ vnstat-1.10/man/vnstatd.1	2010-01-19 00:53:07.000000000 +0300
-@@ -1,7 +1,7 @@
- .TH VNSTATD 1 "JUNE 2011" "version 1.11" "User Manuals"
- .SH NAME
- 
--vnStat daemon \- the alternative for cron based updating
-+vnStatd \- the alternative for cron based updating
- 
- .SH SYNOPSIS
- 
-Index: vnstat-1.10/man/vnstati.1
-===================================================================
---- vnstat-1.10.orig/man/vnstati.1	2010-01-19 00:53:13.000000000 +0300
-+++ vnstat-1.10/man/vnstati.1	2010-01-19 00:53:59.000000000 +0300
-@@ -1,7 +1,7 @@
- .TH VNSTATI 1 "JUNE 2011" "version 1.11" "User Manuals"
- .SH NAME
- 
--vnStat image output \- png image output support for vnStat
-+vnStati \- png image output support for vnStat
- 
- .SH SYNOPSIS
- 

@@ -1,6 +1,7 @@
 vnstat (1.12-1) UNRELEASED; urgency=low
 
   * New upstream release.
+  * Refresh patches.
   * Add a systemd service file. Thanks to Michael Stapelberg for the patch.
     (Closes: #635751)
 
