@@ -8,16 +8,27 @@ BIN_BSD = $(DESTDIR)/usr/local/bin
 SBIN_BSD = $(DESTDIR)/usr/local/sbin
 MAN_BSD = $(DESTDIR)/usr/local/man
 
+.PHONY: vnstat tests check all clean debug install uninstall bsdinstall bsduninstall dist
+
 default: vnstat
 
 vnstat:
-	+make -C src
+	$(MAKE) -C src
+
+tests:
+	$(MAKE) -C tests
+
+check: tests
 
 all:
-	+make -C src all
+	$(MAKE) -C src all
 
 clean:
-	make -C src clean
+	$(MAKE) -C src clean
+	$(MAKE) -C tests clean
+
+debug:
+	$(MAKE) CFLAGS='-Wall -Wextra -g' -C src all
 
 install:
 	@echo "Installing vnStat..."
@@ -49,11 +60,12 @@ install:
 # install default config if such doesn't exist
 	@if [ ! -f "$(DESTDIR)/etc/vnstat.conf" ]; \
 	then echo "Installing config to $(DESTDIR)/etc/vnstat.conf"; \
-	install -D -m 644 cfg/vnstat.conf $(DESTDIR)/etc/vnstat.conf; \
+	install -d -m 755 $(DESTDIR)/etc; \
+	install -m 644 cfg/vnstat.conf $(DESTDIR)/etc/vnstat.conf; \
 	fi
 
 # install everything else
-	install -d -m 755 $(BIN) $(SBIN) $(MAN)/man1 $(MAN)/man5 $(DESTDIR)/var/lib/vnstat
+	install -d -m 755 $(BIN) $(SBIN) $(MAN)/man1 $(MAN)/man5
 	install -s -m 755 src/vnstat $(BIN)
 	install -s -m 755 src/vnstatd $(SBIN)
 	@if [ -f "src/vnstati" ]; \
@@ -70,7 +82,7 @@ install:
 	install -m 644 man/vnstati.1 $(MAN)/man1; \
 	fi
 	
-	@if [ -f $(MAN)/man1/vnstat.1.gz ]; \
+	@if [ -f "$(MAN)/man1/vnstat.1.gz" ]; \
 	then gzip -f9 $(MAN)/man1/vnstat.1; \
 	gzip -f9 $(MAN)/man1/vnstatd.1; \
 	gzip -f9 $(MAN)/man5/vnstat.conf.5; \
@@ -80,15 +92,15 @@ install:
 	fi
 
 # remove vnstat.conf.1 is such exists in the wrong place
-	@if [ -f $(MAN)/man1/vnstat.conf.1.gz ]; \
+	@if [ -f "$(MAN)/man1/vnstat.conf.1.gz" ]; \
 	then rm -f $(MAN)/man1/vnstat.conf.1.gz; \
 	fi
-	@if [ -f $(MAN)/man1/vnstat.conf.1 ]; \
+	@if [ -f "$(MAN)/man1/vnstat.conf.1" ]; \
 	then rm -f $(MAN)/man1/vnstat.conf.1; \
 	fi
 
 	@echo " "
-	@echo "No startup script or cron entry has been installed. See the"
+	@echo "No service file or startup script has been installed. See the"
 	@echo "INSTALL document for instructions on how to enable vnStat."
 
 uninstall:
@@ -136,7 +148,7 @@ bsdinstall:
 	fi
 
 # install default config if such doesn't exist
-	@if [ ! -f $(DESTDIR)/etc/vnstat.conf ]; \
+	@if [ ! -f "$(DESTDIR)/etc/vnstat.conf" ]; \
 	then echo "Installing config to $(DESTDIR)/etc/vnstat.conf"; \
 	install -d -m 755 $(DESTDIR)/etc; \
 	install -m 644 cfg/vnstat.conf $(DESTDIR)/etc/vnstat.conf; \
@@ -159,15 +171,15 @@ bsdinstall:
 	fi
 
 # remove vnstat.conf.1 is such exists in the wrong place
-	@if [ -f $(MAN_BSD)/man1/vnstat.conf.1.gz ]; \
+	@if [ -f "$(MAN_BSD)/man1/vnstat.conf.1.gz" ]; \
 	then rm -f $(MAN_BSD)/man1/vnstat.conf.1.gz; \
 	fi
-	@if [ -f $(MAN_BSD)/man1/vnstat.conf.1 ]; \
+	@if [ -f "$(MAN_BSD)/man1/vnstat.conf.1" ]; \
 	then rm -f $(MAN_BSD)/man1/vnstat.conf.1; \
 	fi
 
 	@echo " "
-	@echo "No startup script or cron entry has been installed. See the"
+	@echo "No service file or startup script has been installed. See the"
 	@echo "INSTALL_BSD document for instructions on how to enable vnStat."
 
 bsduninstall:
@@ -186,3 +198,14 @@ bsduninstall:
 	rm -f $(MAN_BSD)/man5/vnstat*
 	rm -f $(DESTDIR)/etc/vnstat.conf
 	@echo "A possible cron entry needs to be removed manually if such exists."
+
+dist: clean
+	$(eval VER := $(shell grep VNSTATVERSION src/common.h | cut -d\" -f2 | sed 's: :_:g'))
+	@echo
+	@echo "Packaging $(VER)..."
+	@rm -fr "../vnstat-$(VER).tar.gz" "../vnstat-$(VER)"
+	@mkdir "../vnstat-$(VER)"
+	@cp -ax * "../vnstat-$(VER)/"
+	@fakeroot tar zcf "../vnstat-$(VER).tar.gz" "../vnstat-$(VER)"
+	@rm -fr "../vnstat-$(VER)"
+	@ls -l "../vnstat-$(VER).tar.gz"

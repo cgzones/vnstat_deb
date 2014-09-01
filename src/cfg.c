@@ -65,7 +65,7 @@ void printcfgfile(void)
 
 	printf("# default query mode\n");
 	printf("# 0 = normal, 1 = days, 2 = months, 3 = top10\n");
-	printf("# 4 = dumpdb, 5 = short, 6 = weeks, 7 = hours\n");
+	printf("# 4 = exportdb, 5 = short, 6 = weeks, 7 = hours\n");
 	printf("QueryMode %d\n\n", cfg.qmode);
 
 	printf("# filesystem disk space check (1 = enabled, 0 = disabled)\n");
@@ -84,6 +84,12 @@ void printcfgfile(void)
 
 	printf("# vnstatd\n##\n\n");
 
+	printf("# switch to given user when started as root (leave empty to disable)\n");
+	printf("DaemonUser \"%s\"\n\n", cfg.daemonuser);
+
+	printf("# switch to given user when started as root (leave empty to disable)\n");
+	printf("DaemonGroup \"%s\"\n\n", cfg.daemongroup);
+
 	printf("# how often (in seconds) interface data is updated\n");
 	printf("UpdateInterval %d\n\n", cfg.updateinterval);
 
@@ -101,6 +107,12 @@ void printcfgfile(void)
 
 	printf("# enable / disable logging (0 = disabled, 1 = logfile, 2 = syslog)\n");
 	printf("UseLogging %d\n\n", cfg.uselogging);
+
+	printf("# create dirs if needed (1 = enabled, 0 = disabled)\n");
+	printf("CreateDirs %d\n\n", cfg.createdirs);
+
+	printf("# update ownership of files if needed (1 = enabled, 0 = disabled)\n");
+	printf("UpdateFileOwner %d\n\n", cfg.updatefileowner);
 
 	printf("# file used for logging if UseLogging is set to 1\n");
 	printf("LogFile \"%s\"\n\n", cfg.logfile);
@@ -152,7 +164,7 @@ int loadcfg(const char *cfgfile)
 	char value[512], cfgline[512];
 
 	struct cfgsetting cset[] =
-	{
+	{	/* cfg string, char var name, int var name, char len, fill status */
 		{ "Interface", cfg.iface, 0, 32, 0 },
 		{ "DatabaseDir", cfg.dbdir, 0, 512, 0 },
 		{ "Locale", cfg.locale, 0, 32, 0 },
@@ -174,12 +186,16 @@ int loadcfg(const char *cfgfile)
 		{ "UseFileLocking", 0, &cfg.flock, 0, 0 },
 		{ "BootVariation", 0, &cfg.bvar, 0, 0 },
 		{ "TrafficlessDays", 0, &cfg.traflessday, 0, 0 },
+		{ "DaemonUser", cfg.daemonuser, 0, 33, 0 },
+		{ "DaemonGroup", cfg.daemongroup, 0, 33, 0 },
 		{ "UpdateInterval", 0, &cfg.updateinterval, 0, 0 },
 		{ "PollInterval", 0, &cfg.pollinterval, 0, 0 },
 		{ "SaveInterval", 0, &cfg.saveinterval, 0, 0 },
 		{ "OfflineSaveInterval", 0, &cfg.offsaveinterval, 0, 0 },
 		{ "SaveOnStatusChange", 0, &cfg.savestatus, 0, 0 },
 		{ "UseLogging", 0, &cfg.uselogging, 0, 0 },
+		{ "CreateDirs", 0, &cfg.createdirs, 0, 0 },
+		{ "UpdateFileOwner", 0, &cfg.updatefileowner, 0, 0 },
 		{ "LogFile", cfg.logfile, 0, 512, 0 },
 		{ "PidFile", cfg.pidfile, 0, 512, 0 },
 		{ "HeaderFormat", cfg.hformat, 0, 64, 0 },
@@ -221,7 +237,7 @@ int loadcfg(const char *cfgfile)
 			if (debug)
 				printf("Config file: --config\n");
 		} else {
-			snprintf(errorstring, 512, "Unable to open given config file \"%s\".\n", cfgfile);
+			snprintf(errorstring, 512, "Unable to open given config file \"%s\": %s\n", cfgfile, strerror(errno));
 			printe(PT_Error);
 			return 0;
 		}
@@ -229,7 +245,7 @@ int loadcfg(const char *cfgfile)
 	} else {
 
 		if (getenv("HOME")) {
-			strncpy(buffer, getenv("HOME"), 500);
+			strncpy_nt(buffer, getenv("HOME"), 500);
 			strcat(buffer, "/.vnstatrc");
 			tryhome = 1;
 		} else {
@@ -304,7 +320,7 @@ int loadcfg(const char *cfgfile)
 					if (strlen(value)!=0) {
 
 						if (cset[i].namelen>0) {
-							strncpy(cset[i].locc, value, cset[i].namelen);
+							strncpy_nt(cset[i].locc, value, cset[i].namelen);
 							cset[i].locc[cset[i].namelen-1]='\0';
 							if (debug)
 								printf("  c: %s   -> \"%s\": \"%s\"\n", cfgline, cset[i].name, cset[i].locc);
@@ -316,6 +332,11 @@ int loadcfg(const char *cfgfile)
 							continue;
 						}
 
+						cset[i].found = 1;
+						break;
+					} else if (strlen(value)==0) {
+						if (debug)
+							printf("  c: %s   -> \"%s\" with no value, keeping default.\n", cfgline, cset[i].name);
 						cset[i].found = 1;
 						break;
 					}
@@ -397,7 +418,7 @@ void validatecfg(void)
 	}
 
 	if (cfg.dbdir[0] != '/') {
-		strncpy(cfg.dbdir, DATABASEDIR, 512);
+		strncpy_nt(cfg.dbdir, DATABASEDIR, 512);
 		snprintf(errorstring, 512, "DatabaseDir doesn't start with \"/\", resetting to default.");
 		printe(PT_Config);
 	}
@@ -450,14 +471,26 @@ void validatecfg(void)
 		printe(PT_Config);
 	}
 
+	if (cfg.createdirs<0 || cfg.createdirs>2) {
+		cfg.createdirs = CREATEDIRS;
+		snprintf(errorstring, 512, "Invalid value for CreateDirs, resetting to \"%d\".", cfg.createdirs);
+		printe(PT_Config);
+	}
+
+	if (cfg.updatefileowner<0 || cfg.updatefileowner>2) {
+		cfg.updatefileowner = UPDATEFILEOWNER;
+		snprintf(errorstring, 512, "Invalid value for UpdateFileOwner, resetting to \"%d\".", cfg.updatefileowner);
+		printe(PT_Config);
+	}
+
 	if (cfg.logfile[0] != '/') {
-		strncpy(cfg.logfile, LOGFILE, 512);
+		strncpy_nt(cfg.logfile, LOGFILE, 512);
 		snprintf(errorstring, 512, "LogFile doesn't start with \"/\", resetting to default.");
 		printe(PT_Config);
 	}
 
 	if (cfg.pidfile[0] != '/') {
-		strncpy(cfg.pidfile, PIDFILE, 512);
+		strncpy_nt(cfg.pidfile, PIDFILE, 512);
 		snprintf(errorstring, 512, "PidFile doesn't start with \"/\", resetting to default.");
 		printe(PT_Config);
 	}
@@ -511,40 +544,44 @@ void defaultcfg(void)
 	cfg.summaryrate = SUMMARYRATE;
 	cfg.slayout = SUMMARYLAYOUT;
 	cfg.traflessday = TRAFLESSDAY;
-	strncpy(cfg.dbdir, DATABASEDIR, 512);
-	strncpy(cfg.iface, DEFIFACE, 32);
-	strncpy(cfg.locale, LOCALE, 32);
-	strncpy(cfg.dformat, DFORMAT, 64);
-	strncpy(cfg.mformat, MFORMAT, 64);
-	strncpy(cfg.tformat, TFORMAT, 64);
-	strncpy(cfg.hformat, HFORMAT, 64);
-	strncpy(cfg.rxchar, RXCHAR, 1);
-	strncpy(cfg.txchar, TXCHAR, 1);
-	strncpy(cfg.rxhourchar, RXHOURCHAR, 1);
-	strncpy(cfg.txhourchar, TXHOURCHAR, 1);
+	strncpy_nt(cfg.dbdir, DATABASEDIR, 512);
+	strncpy_nt(cfg.iface, DEFIFACE, 32);
+	strncpy_nt(cfg.locale, LOCALE, 32);
+	strncpy_nt(cfg.dformat, DFORMAT, 64);
+	strncpy_nt(cfg.mformat, MFORMAT, 64);
+	strncpy_nt(cfg.tformat, TFORMAT, 64);
+	strncpy_nt(cfg.hformat, HFORMAT, 64);
+	strncpy_nt(cfg.rxchar, RXCHAR, 2);
+	strncpy_nt(cfg.txchar, TXCHAR, 2);
+	strncpy_nt(cfg.rxhourchar, RXHOURCHAR, 2);
+	strncpy_nt(cfg.txhourchar, TXHOURCHAR, 2);
 
+	cfg.daemonuser[0] = '\0';
+	cfg.daemongroup[0] = '\0';
 	cfg.updateinterval = UPDATEINTERVAL;
 	cfg.pollinterval = POLLINTERVAL;
 	cfg.saveinterval = SAVEINTERVAL;
 	cfg.offsaveinterval = OFFSAVEINTERVAL;
 	cfg.savestatus = SAVESTATUS;
 	cfg.uselogging = USELOGGING;
-	strncpy(cfg.logfile, LOGFILE, 512);
-	strncpy(cfg.pidfile, PIDFILE, 512);
+	cfg.createdirs = CREATEDIRS;
+	cfg.updatefileowner = UPDATEFILEOWNER;
+	strncpy_nt(cfg.logfile, LOGFILE, 512);
+	strncpy_nt(cfg.pidfile, PIDFILE, 512);
 
 	cfg.transbg = TRANSBG;
-	strncpy(cfg.cbg, CBACKGROUND, 7);
-	strncpy(cfg.cedge, CEDGE, 7);
-	strncpy(cfg.cheader, CHEADER, 7);
-	strncpy(cfg.cheadertitle, CHEADERTITLE, 7);
-	strncpy(cfg.cheaderdate, CHEADERDATE, 7);
-	strncpy(cfg.ctext, CTEXT, 7);
-	strncpy(cfg.cline, CLINE, 7);
-	strncpy(cfg.clinel, CLINEL, 7);
-	strncpy(cfg.crx, CRX, 7);
-	strncpy(cfg.crxd, CRXD, 7);
-	strncpy(cfg.ctx, CTX, 7);
-	strncpy(cfg.ctxd, CTXD, 7);
+	strncpy_nt(cfg.cbg, CBACKGROUND, 8);
+	strncpy_nt(cfg.cedge, CEDGE, 8);
+	strncpy_nt(cfg.cheader, CHEADER, 8);
+	strncpy_nt(cfg.cheadertitle, CHEADERTITLE, 8);
+	strncpy_nt(cfg.cheaderdate, CHEADERDATE, 8);
+	strncpy_nt(cfg.ctext, CTEXT, 8);
+	strncpy_nt(cfg.cline, CLINE, 8);
+	strncpy_nt(cfg.clinel, CLINEL, 8);
+	strncpy_nt(cfg.crx, CRX, 8);
+	strncpy_nt(cfg.crxd, CRXD, 8);
+	strncpy_nt(cfg.ctx, CTX, 8);
+	strncpy_nt(cfg.ctxd, CTXD, 8);
 }
 
 int ibwadd(const char *iface, int limit)
@@ -562,7 +599,7 @@ int ibwadd(const char *iface, int limit)
 
 		n->next = ifacebw;
 		ifacebw = n;
-		strncpy(n->interface, iface, 32);
+		strncpy_nt(n->interface, iface, 32);
 		n->limit = limit;
 
 	} else {
@@ -585,7 +622,7 @@ int ibwadd(const char *iface, int limit)
 
 		n->next = ifacebw;
 		ifacebw = n;
-		strncpy(n->interface, iface, 32);
+		strncpy_nt(n->interface, iface, 32);
 		n->limit = limit;
 	}
 
@@ -599,15 +636,14 @@ void ibwlist(void)
 
 	if (p == NULL) {
 		printf("ibw list is empty.\n");
+		return;
+	}
 
-	} else {
-
-		printf("ibw:\n");
-		while (p != NULL) {
-			printf(" %2d: \"%s\" \"%d\"\n", i, p->interface, p->limit);
-			p = p->next;
-			i++;
-		}
+	printf("ibw:\n");
+	while (p != NULL) {
+		printf(" %2d: \"%s\" \"%d\"\n", i, p->interface, p->limit);
+		p = p->next;
+		i++;
 	}
 }
 

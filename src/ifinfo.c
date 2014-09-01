@@ -11,9 +11,9 @@ int getifinfo(const char *iface)
 	ifinfo.filled = 0;
 
 	if (strcmp(iface, "default")==0) {
-		strncpy(inface, cfg.iface, 32);
+		strncpy_nt(inface, cfg.iface, 32);
 	} else {
-		strncpy(inface, iface, 32);
+		strncpy_nt(inface, iface, 32);
 	}
 
 #if defined(__linux__)
@@ -56,6 +56,9 @@ int getiflist(char **ifacelist)
 
 	/* initialize list */
 	*ifacelist = malloc(sizeof(char));
+	if (*ifacelist == NULL) {
+		panicexit(__FILE__, __LINE__);
+	}
 	*ifacelist[0] = '\0';
 
 #if defined(__linux__)
@@ -63,10 +66,13 @@ int getiflist(char **ifacelist)
 
 		/* make list of interfaces */
 		while (fgets(procline, 512, fp)!=NULL) {
-			sscanf(procline, "%64s", temp);
-			if (isdigit(temp[(strlen(temp)-1)]) || temp[(strlen(temp)-1)]==':') {
-				sscanf(temp, "%32[^':']s", interface);
+			sscanf(procline, "%63s", temp);
+			if (strlen(temp)>0 && (isdigit(temp[(strlen(temp)-1)]) || temp[(strlen(temp)-1)]==':')) {
+				sscanf(temp, "%31[^':']s", interface);
 				*ifacelist = realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(interface) + 2 ) * sizeof(char)) );
+				if (*ifacelist == NULL) {
+					panicexit(__FILE__, __LINE__);
+				}
 				strncat(*ifacelist, interface, strlen(interface));
 				strcat(*ifacelist, " ");
 			}
@@ -77,12 +83,15 @@ int getiflist(char **ifacelist)
 
 	} else {
 
-		if ((dp=opendir("/sys/class/net"))!=NULL) {
+		if ((dp=opendir(SYSCLASSNET))!=NULL) {
 
 			/* make list of interfaces */
 			while ((di=readdir(dp))) {
 				if (di->d_name[0]!='.') {
 					*ifacelist = realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(di->d_name) + 2 ) * sizeof(char)) );
+					if (*ifacelist == NULL) {
+						panicexit(__FILE__, __LINE__);
+					}
 					strncat(*ifacelist, di->d_name, strlen(di->d_name));
 					strcat(*ifacelist, " ");
 				}
@@ -91,7 +100,7 @@ int getiflist(char **ifacelist)
 			closedir(dp);
 			return 1;
 
-		}	
+		}
 	}
 
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__) || defined(__FreeBSD_kernel__)
@@ -101,6 +110,9 @@ int getiflist(char **ifacelist)
 		for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
 			if (ifa->ifa_addr->sa_family == AF_LINK) {
 				*ifacelist = realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(ifa->ifa_name) + 2 ) * sizeof(char)) );
+				if (*ifacelist == NULL) {
+					panicexit(__FILE__, __LINE__);
+				}
 				strncat(*ifacelist, ifa->ifa_name, strlen(ifa->ifa_name));
 				strcat(*ifacelist, " ");
 			}
@@ -123,16 +135,16 @@ int readproc(const char *iface)
 
 	if ((fp=fopen(PROCNETDEV, "r"))==NULL) {
 		if (debug)
-			printf("Error: Unable to read %s.\n", PROCNETDEV);
+			printf("Error: Unable to read %s: %s\n", PROCNETDEV, strerror(errno));
 		return 0;
 	}
 
-	strncpy(ifaceid, iface, 32);
+	strncpy_nt(ifaceid, iface, 32);
 	strcat(ifaceid, ":");
 
 	check = 0;
 	while (fgets(procline, 512, fp)!=NULL) {
-		sscanf(procline, "%512s", temp[0]);
+		sscanf(procline, "%511s", temp[0]);
 		if (strncmp(ifaceid, temp[0], strlen(ifaceid))==0) {
 			/* if (debug)
 				printf("\n%s\n", procline); */
@@ -148,11 +160,11 @@ int readproc(const char *iface)
 		return 0;
 	} else {
 
-		strncpy(ifinfo.name, iface, 32);
+		strncpy_nt(ifinfo.name, iface, 32);
 
 		/* get rx and tx from procline */
 		proclineptr = strchr(procline, ':');
-		sscanf(proclineptr+1, "%64s %64s %*s %*s %*s %*s %*s %*s %64s %64s", temp[0], temp[1], temp[2], temp[3]);
+		sscanf(proclineptr+1, "%63s %63s %*s %*s %*s %*s %*s %*s %63s %63s", temp[0], temp[1], temp[2], temp[3]);
 
 		ifinfo.rx = strtoull(temp[0], (char **)NULL, 0);
 		ifinfo.tx = strtoull(temp[2], (char **)NULL, 0);
@@ -174,9 +186,9 @@ int readsysclassnet(const char *iface)
 	FILE *fp;
 	char path[64], file[76], buffer[64];
 
-	strncpy(ifinfo.name, iface, 32);
+	strncpy_nt(ifinfo.name, iface, 32);
 
-	snprintf(path, 64, "/sys/class/net/%s/statistics", iface);
+	snprintf(path, 64, "%s/%s/statistics", SYSCLASSNET, iface);
 
 	if (debug)
 		printf("path: %s\n", path);
@@ -185,12 +197,13 @@ int readsysclassnet(const char *iface)
 	snprintf(file, 76, "%s/rx_bytes", path);
 	if ((fp=fopen(file, "r"))==NULL) {
 		if (debug)
-			printf("Unable to read: %s\n", file);
+			printf("Unable to read: %s - %s\n", file, strerror(errno));
 		return 0;
 	} else {
 		if (fgets(buffer, 64, fp)!=NULL) {
 			ifinfo.rx = strtoull(buffer, (char **)NULL, 0);
 		} else {
+			fclose(fp);
 			return 0;
 		}
 	}
@@ -200,12 +213,13 @@ int readsysclassnet(const char *iface)
 	snprintf(file, 76, "%s/tx_bytes", path);
 	if ((fp=fopen(file, "r"))==NULL) {
 		if (debug)
-			printf("Unable to read: %s\n", file);
+			printf("Unable to read: %s - %s\n", file, strerror(errno));
 		return 0;
 	} else {
 		if (fgets(buffer, 64, fp)!=NULL) {
 			ifinfo.tx = strtoull(buffer, (char **)NULL, 0);
 		} else {
+			fclose(fp);
 			return 0;
 		}
 	}
@@ -218,12 +232,13 @@ int readsysclassnet(const char *iface)
 		snprintf(file, 76, "%s/rx_packets", path);
 		if ((fp=fopen(file, "r"))==NULL) {
 			if (debug)
-				printf("Unable to read: %s\n", file);
+				printf("Unable to read: %s - %s\n", file, strerror(errno));
 			return 0;
 		} else {
 			if (fgets(buffer, 64, fp)!=NULL) {
 				ifinfo.rxp = strtoull(buffer, (char **)NULL, 0);
 			} else {
+				fclose(fp);
 				return 0;
 			}
 		}
@@ -233,12 +248,13 @@ int readsysclassnet(const char *iface)
 		snprintf(file, 76, "%s/tx_packets", path);
 		if ((fp=fopen(file, "r"))==NULL) {
 			if (debug)
-				printf("Unable to read: %s\n", file);
+				printf("Unable to read: %s - %s\n", file, strerror(errno));
 			return 0;
 		} else {
 			if (fgets(buffer, 64, fp)!=NULL) {
 				ifinfo.txp = strtoull(buffer, (char **)NULL, 0);
 			} else {
+				fclose(fp);
 				return 0;
 			}
 		}
@@ -278,13 +294,13 @@ void parseifinfo(int newdb)
 
 		/* process rx & tx */
 		if (newdb!=1) {
-			cc = countercalc(data.currx, ifinfo.rx);
+			cc = countercalc(&data.currx, &ifinfo.rx);
 			rxchange = cc/1048576;      /* 1024/1024 */
 			rxkchange = (cc/1024)%1024;
 			krxchange = cc/1024;
 			ifinfo.rxp = cc%1024;
 
-			cc = countercalc(data.curtx, ifinfo.tx);
+			cc = countercalc(&data.curtx, &ifinfo.tx);
 			txchange = cc/1048576;      /* 1024/1024 */
 			txkchange = (cc/1024)%1024;
 			ktxchange = cc/1024;
@@ -330,10 +346,13 @@ void parseifinfo(int newdb)
 	addtraffic(&data.day[0].rx, &data.day[0].rxk, rxchange, rxkchange);
 	addtraffic(&data.day[0].tx, &data.day[0].txk, txchange, txkchange);
 	addtraffic(&data.month[0].rx, &data.month[0].rxk, rxchange, rxkchange);
-	addtraffic(&data.month[0].tx, &data.month[0].txk, txchange, txkchange);	
+	addtraffic(&data.month[0].tx, &data.month[0].txk, txchange, txkchange);
 
 	/* fill some variables from current date & time */
 	d=localtime(&current);
+	if (d==NULL) {
+		panicexit(__FILE__, __LINE__);
+	}
 	day=d->tm_mday;
 	month=d->tm_mon;
 	year=d->tm_year;
@@ -344,6 +363,9 @@ void parseifinfo(int newdb)
 	/* add traffic to previous hour when update happens at X:00 */
 	/* and previous update was during previous hour */
 	d=localtime(&data.lastupdated);
+	if (d==NULL) {
+		panicexit(__FILE__, __LINE__);
+	}
 	if ((min==0) && (d->tm_hour!=hour) && ((current-data.lastupdated)<=3600)) {
 		hour--;
 		if (hour<0) {
@@ -359,6 +381,9 @@ void parseifinfo(int newdb)
 
 	/* rotate days in database if needed */
 	d=localtime(&data.day[0].date);
+	if (d==NULL) {
+		panicexit(__FILE__, __LINE__);
+	}
 	if ((d->tm_mday!=day) || (d->tm_mon!=month) || (d->tm_year!=year)) {
 
 		/* make a new entry only if there's something to remember (configuration dependent) */
@@ -371,33 +396,11 @@ void parseifinfo(int newdb)
 
 	/* rotate months in database if needed */
 	d=localtime(&data.month[0].month);
+	if (d==NULL) {
+		panicexit(__FILE__, __LINE__);
+	}
 	if ((d->tm_mon!=month) && (day>=cfg.monthrotate)) {
 		rotatemonths();
-	}
-}
-
-uint64_t countercalc(uint64_t a, uint64_t b)
-{
-	/* no flip */
-	if (b>=a) {
-		if (debug)
-			printf("cc: %"PRIu64" - %"PRIu64" = %"PRIu64"\n", b, a, b-a);
-		return b-a;
-
-	/* flip exists */
-	} else {
-		/* original counter is 64bit */
-		if (a>FP32) {
-			if (debug)
-				printf("cc64: uint64 - %"PRIu64" + %"PRIu64" = %"PRIu64"\n", a, b, (uint64_t)FP64-a+b);
-			return FP64-a+b;
-
-		/* original counter is 32bit */
-		} else {
-			if (debug)
-				printf("cc32: uint32 - %"PRIu64" + %"PRIu64" = %"PRIu64"\n", a, b, (uint64_t)FP32-a+b);
-			return FP32-a+b;
-		}
 	}
 }
 
@@ -427,7 +430,7 @@ int readifaddrs(const char *iface)
 			printf("Requested interface \"%s\" not found.\n", iface);
 		return 0;
 	} else {
-		strncpy(ifinfo.name, iface, 32);
+		strncpy_nt(ifinfo.name, iface, 32);
 		ifinfo.rx = ifd->ifi_ibytes;
 		ifinfo.tx = ifd->ifi_obytes;
 		ifinfo.rxp = ifd->ifi_ipackets;

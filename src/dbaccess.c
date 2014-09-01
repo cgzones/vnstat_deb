@@ -5,82 +5,87 @@ int readdb(const char *iface, const char *dirname)
 {
 	FILE *db;
 	char file[512], backup[512];
-	int newdb=0;
 
 	snprintf(file, 512, "%s/%s", dirname, iface);
 	snprintf(backup, 512, "%s/.%s", dirname, iface);
 
-	if ((db=fopen(file,"r"))!=NULL) {
+	if ((db=fopen(file,"r"))==NULL) {
+		snprintf(errorstring, 512, "Unable to read database \"%s\": %s", file, strerror(errno));
+		printe(PT_Error);
 
-		/* lock file */
-		if (!lockdb(fileno(db), 0)) {
-			return -1;
+		/* create new database template */
+		initdb();
+		strncpy_nt(data.interface, iface, 32);
+		strncpy_nt(data.nick, data.interface, 32);
+		return 1;
+	}
+
+	/* lock file */
+	if (!lockdb(fileno(db), 0)) {
+		fclose(db);
+		return -1;
+	}
+
+	if (fread(&data,sizeof(DATA),1,db)==0) {
+		data.version=-1;
+		if (debug) {
+			printf("db: Database read failed for file \"%s\".\n", file);
+		}
+	} else {
+		if (debug) {
+			printf("db: Database loaded for interface \"%s\"...\n", data.interface);
+		}
+	}
+
+	/* convert old database to new format if necessary */
+	if (data.version<DBVERSION) {
+		if (data.version!=-1) {
+			snprintf(errorstring, 512, "Trying to convert database \"%s\" (v%d) to current db format", file, data.version);
+			printe(PT_Info);
 		}
 
-		if (fread(&data,sizeof(DATA),1,db)==0) {
-			data.version=-1;
-			if (debug) {
-				printf("db: Database read failed for file \"%s\".\n", file);
-			}
-		} else {
-			if (debug) {
-				printf("db: Database loaded for interface \"%s\"...\n", data.interface);
-			}
-		}
+		if ((data.version==-1) || (!convertdb(db))) {
 
-		/* convert old database to new format if necessary */
-		if (data.version<DBVERSION) {
-			if (data.version!=-1) {
-				snprintf(errorstring, 512, "Trying to convert database \"%s\" (v%d) to current db format", file, data.version);
-				printe(PT_Info);
-			}
-
-			if ((data.version==-1) || (!convertdb(db))) {
-
-				/* close current db and try using backup if database conversion failed */
-				fclose(db);
-				if ((db=fopen(backup,"r"))!=NULL) {
-
-					/* lock file */
-					if (!lockdb(fileno(db), 0)) {
-						fclose(db);
-						return -1;
-					}
-
-					if (fread(&data,sizeof(DATA),1,db)==0) {
-						snprintf(errorstring, 512, "Database load failed even when using backup. Aborting.");
-						printe(PT_Error);
-						fclose(db);
-
-						if (noexit) {
-							return -1;
-						} else {
-							exit(EXIT_FAILURE);
-						}
-					} else {
-						if (debug) {
-							printf("db: Database loaded for interface \"%s\"...\n", data.interface);
-						}
-					}
-
-					if (data.version!=DBVERSION) {
-						if (!convertdb(db)) {
-							snprintf(errorstring, 512, "Unable to use backup database.");
-							printe(PT_Error);
-							fclose(db);
-
-							if (noexit) {
-								return -1;
-							} else {
-								exit(EXIT_FAILURE);
-							}
-						}
-					}
-					snprintf(errorstring, 512, "Database possibly corrupted, using backup instead.");
-					printe(PT_Info);
+			/* close current db and try using backup if database conversion failed */
+			fclose(db);
+			if ((db=fopen(backup,"r"))==NULL) {
+				snprintf(errorstring, 512, "Unable to open backup database \"%s\": %s", backup, strerror(errno));
+				printe(PT_Error);
+				if (noexit) {
+					return -1;
 				} else {
-					snprintf(errorstring, 512, "Unable to open backup database \"%s\".", backup);
+					exit(EXIT_FAILURE);
+				}
+			}
+
+			/* lock file */
+			if (!lockdb(fileno(db), 0)) {
+				fclose(db);
+				return -1;
+			}
+
+			if (fread(&data,sizeof(DATA),1,db)==0) {
+				snprintf(errorstring, 512, "Database load failed even when using backup (%s). Aborting.", strerror(errno));
+				printe(PT_Error);
+				fclose(db);
+
+				if (noexit) {
+					return -1;
+				} else {
+					exit(EXIT_FAILURE);
+				}
+			} else {
+				if (debug) {
+					printf("db: Database loaded for interface \"%s\"...\n", data.interface);
+				}
+			}
+
+			if (data.version!=DBVERSION) {
+				if (!convertdb(db)) {
+					snprintf(errorstring, 512, "Unable to use backup database.");
 					printe(PT_Error);
+					fclose(db);
+
 					if (noexit) {
 						return -1;
 					} else {
@@ -88,45 +93,40 @@ int readdb(const char *iface, const char *dirname)
 					}
 				}
 			}
-
-		} else if (data.version>DBVERSION) {
-			snprintf(errorstring, 512, "Downgrading database \"%s\" (v%d) is not supported.", file, data.version);
-			printe(PT_Error);
-			fclose(db);
-
-			if (noexit) {
-				return -1;
-			} else {
-				exit(EXIT_FAILURE);
-			}		
+			snprintf(errorstring, 512, "Database possibly corrupted, using backup instead.");
+			printe(PT_Info);
 		}
 
+	} else if (data.version>DBVERSION) {
+		snprintf(errorstring, 512, "Downgrading database \"%s\" (v%d) is not supported.", file, data.version);
+		printe(PT_Error);
 		fclose(db);
 
-		if (strcmp(data.interface,iface)) {
-			snprintf(errorstring, 512, "Warning:\nThe previous interface for this file was \"%s\".",data.interface);
-			printe(PT_Multiline);
-			snprintf(errorstring, 512, "It has now been replaced with \"%s\".",iface);
-			printe(PT_Multiline);
-			snprintf(errorstring, 512, "You can ignore this message if you renamed the filename.");
-			printe(PT_Multiline);
-			snprintf(errorstring, 512, "Interface name mismatch, renamed \"%s\" -> \"%s\"", data.interface, iface);
-			printe(PT_ShortMultiline);
-			if (strcmp(data.interface, data.nick)==0) {
-				strncpy(data.nick, iface, 32);
-			}
-			strncpy(data.interface, iface, 32);
+		if (noexit) {
+			return -1;
+		} else {
+			exit(EXIT_FAILURE);
 		}
-	} else {
-		snprintf(errorstring, 512, "Unable to read database \"%s\".",file);
-		printe(PT_Error);
-
-		newdb=1;
-		initdb();
-		strncpy(data.interface, iface, 32);
-		strncpy(data.nick, data.interface, 32);
 	}
-	return newdb;
+
+	fclose(db);
+
+	if (strcmp(data.interface,iface)) {
+		snprintf(errorstring, 512, "Warning:\nThe previous interface for this file was \"%s\".",data.interface);
+		printe(PT_Multiline);
+		snprintf(errorstring, 512, "It has now been replaced with \"%s\".",iface);
+		printe(PT_Multiline);
+		snprintf(errorstring, 512, "You can ignore this message if you renamed the filename.");
+		printe(PT_Multiline);
+		snprintf(errorstring, 512, "Interface name mismatch, renamed \"%s\" -> \"%s\"", data.interface, iface);
+		printe(PT_ShortMultiline);
+		if (strcmp(data.interface, data.nick)==0) {
+			strncpy_nt(data.nick, iface, 32);
+		}
+		strncpy_nt(data.interface, iface, 32);
+	}
+
+	return 0;
 }
 
 void initdb(void)
@@ -201,7 +201,7 @@ void initdb(void)
 		data.month[0].month=current;
 	}
 
-	data.btime=FP32;
+	data.btime=MAX32;
 }
 
 int writedb(const char *iface, const char *dirname, int newdb)
@@ -214,44 +214,45 @@ int writedb(const char *iface, const char *dirname, int newdb)
 
 	/* try to make backup of old data if this isn't a new database */
 	if (!newdb && !backupdb(file, backup)) {
-		snprintf(errorstring, 512, "Unable create database backup \"%s\".", backup);
+		snprintf(errorstring, 512, "Unable to create database backup \"%s\".", backup);
 		printe(PT_Error);
-		return 0;		
+		return 0;
 	}
 
 	/* make sure version stays correct */
 	data.version=DBVERSION;
 
-	if ((db=fopen(file,"w"))!=NULL) {
-
-		/* lock file */
-		if (!lockdb(fileno(db), 1)) {
-			return 0;
-		}
-
-		/* update timestamp when not merging */
-		if (newdb!=2) {
-			data.lastupdated=time(NULL);
-		}
-
-		if (fwrite(&data,sizeof(DATA),1,db)==0) {
-			snprintf(errorstring, 512, "Unable to write database \"%s\".", file);
-			printe(PT_Error);
-			return 0;
-		} else {
-			if (debug) {
-				printf("db: Database \"%s\" saved.\n", file);
-			}
-			fclose(db);
-			if ((newdb) && (noexit==0)) {
-				snprintf(errorstring, 512, "-> A new database has been created.");
-				printe(PT_Info);
-			}
-		}
-	} else {
-		snprintf(errorstring, 512, "Unable to write database \"%s\".", file);
+	if ((db=fopen(file,"w"))==NULL) {
+		snprintf(errorstring, 512, "Unable to open database \"%s\" for writing: %s", file, strerror(errno));
 		printe(PT_Error);
 		return 0;
+	}
+
+	/* lock file */
+	if (!lockdb(fileno(db), 1)) {
+		fclose(db);
+		return 0;
+	}
+
+	/* update timestamp when not merging */
+	if (newdb!=2) {
+		data.lastupdated=time(NULL);
+	}
+
+	if (fwrite(&data,sizeof(DATA),1,db)==0) {
+		snprintf(errorstring, 512, "Unable to write database \"%s\": %s", file, strerror(errno));
+		printe(PT_Error);
+		fclose(db);
+		return 0;
+	} else {
+		if (debug) {
+			printf("db: Database \"%s\" saved.\n", file);
+		}
+		fclose(db);
+		if ((newdb) && (noexit==0)) {
+			snprintf(errorstring, 512, "-> A new database has been created.");
+			printe(PT_Info);
+		}
 	}
 
 	return 1;
@@ -324,8 +325,8 @@ int convertdb(FILE *db)
 
 		/* set basic values */
 		data12.version=2;
-		strncpy(data12.interface, data10.interface, 32);
-		strncpy(data12.nick, data10.interface, 32);
+		strncpy_nt(data12.interface, data10.interface, 32);
+		strncpy_nt(data12.nick, data10.interface, 32);
 		data12.active=1;
 		data12.totalrx=data10.totalrx;
 		data12.totaltx=data10.totaltx;
@@ -348,7 +349,7 @@ int convertdb(FILE *db)
 				data12.day[i].rx=0;
 				data12.day[i].tx=0;
 				data12.day[i].used=0;
-			}			
+			}
 		}
 
 		/* months */
@@ -369,14 +370,14 @@ int convertdb(FILE *db)
 				data12.month[i].rx=0;
 				data12.month[i].tx=0;
 				data12.month[i].used=0;
-			}			
-		}		
+			}
+		}
 
 		/* top10 */
 		for (i=0; i<=9; i++) {
 			if (data10.top10[i].rx+data10.top10[i].tx>0) {
 				data12.top10[i].rx=data10.top10[i].rx;
-				data12.top10[i].tx=data10.top10[i].tx;				
+				data12.top10[i].tx=data10.top10[i].tx;
 
 				/* get day */
 				day=atoi(data10.top10[i].date+7);
@@ -458,14 +459,14 @@ int convertdb(FILE *db)
 			if (fread(&data12, sizeof(DATA12), 1, db)==0) {
 				snprintf(errorstring, 512, "Unable to convert corrupted database.");
 				printe(PT_Error);
-				return 0;			
+				return 0;
 			}
 		}
 
 		/* set basic values */
-		data.version=3;	
-		strncpy(data.interface, data12.interface, 32);
-		strncpy(data.nick, data12.nick, 32);
+		data.version=3;
+		strncpy_nt(data.interface, data12.interface, 32);
+		strncpy_nt(data.nick, data12.nick, 32);
 		data.active=data12.active;
 		data.totalrx=data12.totalrx;
 		data.totaltx=data12.totaltx;
@@ -489,7 +490,7 @@ int convertdb(FILE *db)
 				data.day[i].rx=data.day[i].tx=0;
 				data.day[i].rxk=data.day[i].txk=0;
 				data.day[i].used=0;
-			}			
+			}
 		}
 
 		/* months */
@@ -504,7 +505,7 @@ int convertdb(FILE *db)
 				data.month[i].rx=data.month[i].tx=0;
 				data.month[i].rxk=data.month[i].txk=0;
 				data.month[i].used=0;
-			}			
+			}
 		}
 
 		/* top10 */
@@ -540,7 +541,7 @@ int convertdb(FILE *db)
 	} else if (data.version>DBVERSION) {
 		snprintf(errorstring, 512, "Unable to downgrade database from version \"%d\".", data.version);
 		printe(PT_Error);
-		return 0;	
+		return 0;
 	} else if (data.version!=DBVERSION) {
 		snprintf(errorstring, 512, "Unable to convert database version \"%d\".", data.version);
 		printe(PT_Error);
@@ -558,50 +559,52 @@ int lockdb(int fd, int dbwrite)
 	int operation, locktry=1;
 
 	/* lock only if configured to do so */
-	if (cfg.flock) {
-
-		if (dbwrite) {
-			operation = LOCK_EX|LOCK_NB;
-		} else {
-			operation = LOCK_SH|LOCK_NB;
-		}
-
-		/* try locking file */
-		while (flock(fd, operation)!=0) {
-
-			if (debug) {
-				printf("db: Database access locked (%d, %d)\n", dbwrite, locktry);
-			}
-
-			/* give up if lock can't be obtained */
-			if (locktry>=LOCKTRYLIMIT) {
-				if (dbwrite) {
-					snprintf(errorstring, 512, "Locking database file for write failed for %d tries:\n%s (%d)", locktry, strerror(errno), errno);
-				} else {
-					snprintf(errorstring, 512, "Locking database file for read failed for %d tries:\n%s (%d)", locktry, strerror(errno), errno);
-				}
-				printe(PT_Error);
-				return 0;				
-			}
-
-			/* someone else has the lock */
-			if (errno==EWOULDBLOCK) {
-				sleep(1);
-
-			/* real error */
-			} else {
-				if (dbwrite) {
-					snprintf(errorstring, 512, "Locking database file for write failed:\n%s (%d)", strerror(errno), errno);
-				} else {
-					snprintf(errorstring, 512, "Locking database file for read failed:\n%s (%d)", strerror(errno), errno);
-				}
-				printe(PT_Error);
-				return 0;
-			}
-
-			locktry++;
-		}
+	if (!cfg.flock) {
+		return 1;
 	}
+
+	if (dbwrite) {
+		operation = LOCK_EX|LOCK_NB;
+	} else {
+		operation = LOCK_SH|LOCK_NB;
+	}
+
+	/* try locking file */
+	while (flock(fd, operation)!=0) {
+
+		if (debug) {
+			printf("db: Database access locked (%d, %d)\n", dbwrite, locktry);
+		}
+
+		/* give up if lock can't be obtained */
+		if (locktry>=LOCKTRYLIMIT) {
+			if (dbwrite) {
+				snprintf(errorstring, 512, "Locking database file for write failed for %d tries:\n%s (%d)", locktry, strerror(errno), errno);
+			} else {
+				snprintf(errorstring, 512, "Locking database file for read failed for %d tries:\n%s (%d)", locktry, strerror(errno), errno);
+			}
+			printe(PT_Error);
+			return 0;
+		}
+
+		/* someone else has the lock */
+		if (errno==EWOULDBLOCK) {
+			sleep(1);
+
+		/* real error */
+		} else {
+			if (dbwrite) {
+				snprintf(errorstring, 512, "Locking database file for write failed:\n%s (%d)", strerror(errno), errno);
+			} else {
+				snprintf(errorstring, 512, "Locking database file for read failed:\n%s (%d)", strerror(errno), errno);
+			}
+			printe(PT_Error);
+			return 0;
+		}
+
+		locktry++;
+	}
+
 	return 1;
 }
 
@@ -613,7 +616,7 @@ int checkdb(const char *iface, const char *dirname)
 	snprintf(file, 512, "%s/%s", dirname, iface);
 
 	if (statvfs(file, &buf)==0) {
-		return 1; /* file exists */	
+		return 1; /* file exists */
 	} else {
 		return 0; /* no file or some other error */
 	}
@@ -629,7 +632,6 @@ int removedb(const char *iface, const char *dirname)
 
 	snprintf(file, 512, "%s/%s", dirname, iface);
 	if (unlink(file)!=0) {
-		perror("unlink");
 		return 0;
 	}
 
@@ -662,12 +664,12 @@ void cleanhours(void)
 	hour=d->tm_hour;
 	d=localtime(&data.hour[hour].date);
 	if (d->tm_mday!=day) {
-			data.hour[hour].rx=0;
-			data.hour[hour].tx=0;
-			if (debug) {
-				printf("db: Current hour %d (%u) cleaned.\n", hour, (unsigned int)data.hour[hour].date);
-			}
-			data.hour[hour].date=current;
+		data.hour[hour].rx=0;
+		data.hour[hour].tx=0;
+		if (debug) {
+			printf("db: Current hour %d (%u) cleaned.\n", hour, (unsigned int)data.hour[hour].date);
+		}
+		data.hour[hour].date=current;
 	}
 }
 
@@ -759,4 +761,240 @@ void rotatemonths(void)
 		d=localtime(&data.month[0].month);
 		printf("db: Months rotated. Current month: \"%d\".\n", d->tm_mon+1);
 	}
+}
+
+void cleartop10(const char *iface, const char *dirname)
+{
+	int i;
+
+	if (readdb(iface, dirname)!=0) {
+		exit(EXIT_FAILURE);
+	}
+
+	for (i=0; i<=9; i++) {
+		data.top10[i].rx=data.top10[i].tx=0;
+		data.top10[i].rxk=data.top10[i].txk=0;
+		data.top10[i].used=0;
+	}
+
+	writedb(iface, dirname, 0);
+	printf("Top10 cleared for interface \"%s\".\n", data.interface);
+}
+
+void rebuilddbtotal(const char *iface, const char *dirname)
+{
+	int i;
+
+	if (readdb(iface, dirname)!=0) {
+		exit(EXIT_FAILURE);
+	}
+
+	data.totalrx=data.totaltx=data.totalrxk=data.totaltxk=0;
+	for (i=0; i<=11; i++) {
+		if (data.month[i].used) {
+			addtraffic(&data.totalrx, &data.totalrxk, data.month[i].rx, data.month[i].rxk);
+			addtraffic(&data.totaltx, &data.totaltxk, data.month[i].tx, data.month[i].txk);
+		}
+	}
+
+	writedb(iface, dirname, 0);
+	printf("Total transfer rebuild completed for interface \"%s\".\n", data.interface);
+}
+
+int validatedb(void)
+{
+	int i, used;
+	uint64_t rxsum, txsum;
+
+	if (data.version>DBVERSION) {
+		printf("Invalid database version: %d\n", data.version);
+		return 0;
+	}
+
+	if (data.active<0 || data.active>1) {
+		printf("Invalid database activity status: %d\n", data.active);
+		return 0;
+	}
+
+	if (!strlen(data.interface)) {
+		printf("Invalid database interface string: %s\n", data.interface);
+		return 0;
+	}
+
+	if (!data.created || !data.lastupdated || !data.btime) {
+		printf("Invalid database timestamp.\n");
+		return 0;
+	}
+
+	rxsum = txsum = 0;
+	used = 1;
+	for (i=0; i<30; i++) {
+		if (data.day[i].used<0 || data.day[i].used>1) {
+			printf("Invalid database daily use information: %d %d\n", i, data.day[i].used);
+			return 0;
+		}
+		if (data.day[i].rxk<0 || data.day[i].txk<0) {
+			printf("Invalid database daily traffic: %d\n", i);
+			return 0;
+		}
+		if (data.day[i].used && !used) {
+			printf("Invalid database daily use order: %d\n", i);
+			return 0;
+		} else if (!data.day[i].used) {
+			used = 0;
+		}
+		if (data.day[i].used) {
+			rxsum += data.day[i].rx;
+			txsum += data.day[i].tx;
+		}
+	}
+
+	if (data.totalrx < rxsum || data.totaltx < txsum) {
+		printf("Invalid database total traffic compared to daily usage.\n");
+		return 0;
+	}
+
+	rxsum = txsum = 0;
+	used = 1;
+	for (i=0; i<12; i++) {
+		if (data.month[i].used<0 || data.month[i].used>1) {
+			printf("Invalid database monthly use information: %d %d\n", i, data.month[i].used);
+			return 0;
+		}
+		if (data.month[i].rxk<0 || data.month[i].txk<0) {
+			printf("Invalid database monthly traffic: %d\n", i);
+			return 0;
+		}
+		if (data.month[i].used && !used) {
+			printf("Invalid database monthly use order: %d\n", i);
+			return 0;
+		} else if (!data.month[i].used) {
+			used = 0;
+		}
+		if (data.month[i].used) {
+			rxsum += data.month[i].rx;
+			txsum += data.month[i].tx;
+		}
+	}
+
+	if (data.totalrx < rxsum || data.totaltx < txsum) {
+		printf("Invalid database total traffic compared to monthly usage.\n");
+		return 0;
+	}
+
+	used = 1;
+	for (i=0; i<10; i++) {
+		if (data.top10[i].used<0 || data.top10[i].used>1) {
+			printf("Invalid database top10 use information: %d %d\n", i, data.top10[i].used);
+			return 0;
+		}
+		if (data.top10[i].rxk<0 || data.top10[i].txk<0) {
+			printf("Invalid database top10 traffic: %d\n", i);
+			return 0;
+		}
+		if (data.top10[i].used && !used) {
+			printf("Invalid database top10 use order: %d\n", i);
+			return 0;
+		} else if (!data.top10[i].used) {
+			used = 0;
+		}
+	}
+
+	return 1;
+}
+
+int importdb(const char *filename)
+{
+	FILE *input;
+	char line[512];
+	int i, count, linecount, scancount;
+	uint64_t tempint;
+	DAY day;
+	MONTH month;
+	HOUR hour;
+
+	if ((input=fopen(filename, "r"))==NULL) {
+		printf("Error: opening file \"%s\" failed: %s\n", filename, strerror(errno));
+		return 0;
+	}
+
+	linecount = 0;
+	while (fgets(line, sizeof(line), input) != NULL) {
+		if (debug) {
+			printf("parsing %s", line);
+		}
+
+		if (strlen(line)<6) {
+			continue;
+		}
+
+		scancount = 0;
+		scancount += sscanf(line, "version;%2d", &data.version);
+		scancount += sscanf(line, "active;%2d", &data.active);
+		scancount += sscanf(line, "interface;%31s", data.interface);
+		scancount += sscanf(line, "nick;%31s", data.nick);
+		if (sscanf(line, "created;%20"PRIu64, &tempint)) {
+			data.created = (time_t)tempint;
+			scancount++;
+		}
+		if (sscanf(line, "updated;%20"PRIu64, &tempint)) {
+			data.lastupdated = (time_t)tempint;
+			scancount++;
+		}
+		scancount += sscanf(line, "totalrx;%20"PRIu64, &data.totalrx);
+		scancount += sscanf(line, "totaltx;%20"PRIu64, &data.totaltx);
+		scancount += sscanf(line, "currx;%20"PRIu64, &data.currx);
+		scancount += sscanf(line, "curtx;%20"PRIu64, &data.curtx);
+		scancount += sscanf(line, "totalrxk;%10d", &data.totalrxk);
+		scancount += sscanf(line, "totaltxk;%10d", &data.totaltxk);
+		scancount += sscanf(line, "btime;%20"PRIu64, &data.btime);
+
+		count = sscanf(line, "d;%2d;%20"PRIu64";%20"PRIu64";%20"PRIu64";%10d;%10d;%2d",
+				&i, &tempint, &day.rx, &day.tx, &day.rxk, &day.txk, &day.used);
+		if (count == 7) {
+			if (i >= 0 && i < (int)sizeof(data.day) / (int)sizeof(DAY)) {
+				day.date = (time_t)tempint;
+				data.day[i] = day;
+				scancount++;
+			}
+		}
+
+		count = sscanf(line, "m;%2d;%20"PRIu64";%20"PRIu64";%20"PRIu64";%10d;%10d;%2d",
+				&i, &tempint, &month.rx, &month.tx, &month.rxk, &month.txk, &month.used);
+		if (count == 7) {
+			if ( i >= 0 && i < (int)sizeof(data.month) / (int)sizeof(MONTH) ) {
+				month.month = (time_t)tempint;
+				data.month[i] = month;
+				scancount++;
+			}
+		}
+
+		count = sscanf(line, "t;%2d;%20"PRIu64";%20"PRIu64";%20"PRIu64";%10d;%10d;%2d",
+				&i, &tempint, &day.rx, &day.tx, &day.rxk, &day.txk, &day.used);
+		if (count == 7) {
+			if ( i >= 0 && i < (int)sizeof(data.top10) / (int)sizeof(DAY) ) {
+				day.date = (time_t)tempint;
+				data.top10[i] = day;
+				scancount++;
+			}
+		}
+
+		count = sscanf(line, "h;%2d;%20"PRIu64";%20"PRIu64";%20"PRIu64,
+				&i, &tempint, &hour.rx, &hour.tx);
+		if (count == 4) {
+			if ( i >= 0 && i < (int)sizeof(data.hour) / (int)sizeof(HOUR) ) {
+				hour.date = (time_t)tempint;
+				data.hour[i] = hour;
+				scancount++;
+			}
+		}
+
+		if (scancount) {
+			linecount++;
+		}
+	}
+
+	fclose(input);
+
+	return linecount;
 }

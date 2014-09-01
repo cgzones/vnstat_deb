@@ -40,7 +40,7 @@ int printe(PrintType type)
 			default:
 				printf("%d: %s\n", type, errorstring);
 				break;
-		}	
+		}
 
 	}
 
@@ -53,15 +53,21 @@ int logprint(PrintType type)
 	time_t current;
 	FILE *logfile;
 
+	buffer[0] = '\0';
+
 	/* logfile */
 	if (cfg.uselogging==1) {
+
+		if (type == PT_Multiline) {
+			return 0;
+		}
 
 		if ((logfile = fopen(cfg.logfile, "a")) == NULL) {
 			return 0;
 		}
 
 		current = time(NULL);
-		strftime(timestamp, 22, "%Y.%m.%d %H:%M:%S", localtime(&current));
+		strftime(timestamp, 22, "%Y-%m-%d %H:%M:%S", localtime(&current));
 
 		switch (type) {
 			case PT_Info:
@@ -72,8 +78,6 @@ int logprint(PrintType type)
 				break;
 			case PT_Config:
 				snprintf(buffer, 512, "[%s] Config: %s\n", timestamp, errorstring);
-				break;
-			case PT_Multiline:
 				break;
 			case PT_ShortMultiline:
 				snprintf(buffer, 512, "[%s] %s\n", timestamp, errorstring);
@@ -167,4 +171,83 @@ uint32_t mosecs(void)
 	} else {
 		return 0;
 	}
+}
+
+uint64_t countercalc(const uint64_t *a, const uint64_t *b)
+{
+	/* no flip */
+	if (*b>=*a) {
+		if (debug)
+			printf("cc: %"PRIu64" - %"PRIu64" = %"PRIu64"\n", *b, *a, *b-*a);
+		return *b-*a;
+
+	/* flip exists */
+	} else {
+		/* original counter is 64bit */
+		if (*a>MAX32) {
+			if (debug)
+				printf("cc64: uint64 - %"PRIu64" + %"PRIu64" = %"PRIu64"\n", *a, *b, (uint64_t)MAX64-*a+*b);
+			return MAX64-*a+*b;
+
+		/* original counter is 32bit */
+		} else {
+			if (debug)
+				printf("cc32: uint32 - %"PRIu64" + %"PRIu64" = %"PRIu64"\n", *a, *b, (uint64_t)MAX32-*a+*b);
+			return MAX32-*a+*b;
+		}
+	}
+}
+
+void addtraffic(uint64_t *destmb, int *destkb, const uint64_t srcmb, const int srckb)
+{
+        *destmb+=srcmb;
+        *destkb+=srckb;
+
+        if (*destkb>=1024) {
+                *destmb+=*destkb/1024;
+                *destkb-=(*destkb/1024)*1024;
+        }
+}
+
+uint64_t mbkbtokb(uint64_t mb, uint64_t kb)
+{
+	if (kb>=1024) {
+		mb+=kb/1024;
+		kb-=(kb/1024)*1024;
+	}
+	return (mb*1024)+kb;
+}
+
+/* strncpy with ensured null termination */
+char *strncpy_nt(char *dest, const char *src, size_t n)
+{
+	strncpy(dest, src, n);
+	dest[n-1] = '\0';
+	return dest;
+}
+
+int isnumeric(const char *s)
+{
+	int i, len;
+	len = strlen(s);
+
+	if (!len) {
+		return 0;
+	}
+
+	for (i=0; i<len; i++) {
+		if (!isdigit(s[i])) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+void panicexit(const char *sourcefile, const int sourceline)
+{
+	snprintf(errorstring, 512, "Unexpected error (%s), exiting. (%s:%d)\n", strerror(errno), sourcefile, sourceline);
+	fprintf(stderr, "%s\n", errorstring);
+	printe(PT_Error);
+	exit(EXIT_FAILURE);
 }

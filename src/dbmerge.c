@@ -13,8 +13,8 @@ int mergedb(char iface[], char dirname[])
 
 	/* create empty database */
 	emptydb(&mergedata);
-	strncpy(mergedata.interface, iface, 32);
-	strncpy(mergedata.nick, mergedata.interface, 32);
+	strncpy_nt(mergedata.interface, iface, 32);
+	strncpy_nt(mergedata.nick, mergedata.interface, 32);
 
 	if (debug)
 		printf("iface merge: %s\n", iface);
@@ -44,7 +44,7 @@ int mergedb(char iface[], char dirname[])
 
 	/* replace active data with merged */
 	if (memcpy(&data, &mergedata, sizeof(data)) != NULL) {
-		return 1;	
+		return 1;
 	} else {
 		return 0;
 	}

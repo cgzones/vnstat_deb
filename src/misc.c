@@ -28,7 +28,7 @@ int kerneltest(void)
 		}
 
 		printf("=");
-		fflush(stdout);	
+		fflush(stdout);
 	}
 
 	printf("] done.\n\n");
@@ -72,7 +72,7 @@ int spacecheck(char *path)
 		if (noexit) {
 			return 0;
 		} else {
-			snprintf(errorstring, 512, "Free diskspace check failed.");
+			snprintf(errorstring, 512, "Free diskspace check failed: %s", strerror(errno));
 			printe(PT_Error);
 			exit(EXIT_FAILURE);
 		}
@@ -87,7 +87,7 @@ int spacecheck(char *path)
 		printf("bavail %lu\n", (unsigned long int)buf.f_bavail);
 		printf("ffree %lu\n", (unsigned long int)buf.f_ffree);
 		printf("%"PRIu64" free space left\n", free);
-	}	
+	}
 
 	/* the database is less than 3kB but let's require */
 	/* 1MB to be on the safe side, anyway, the filesystem should */
@@ -137,7 +137,7 @@ int getbtime(void)
 	char temp[64], statline[128];
 
 	if ((fp=fopen("/proc/stat","r"))==NULL) {
-		snprintf(errorstring, 512, "Unable to read /proc/stat.");
+		snprintf(errorstring, 512, "Unable to read /proc/stat: %s", strerror(errno));
 		printe(PT_Error);
 		if (noexit) {
 			return 0;
@@ -148,7 +148,7 @@ int getbtime(void)
 
 	check=0;
 	while (fgets(statline,128,fp)!=NULL) {
-		sscanf(statline,"%64s",temp);
+		sscanf(statline,"%63s",temp);
 		if (strcmp(temp,"btime")==0) {
 			/* if (debug)
 				printf("\n%s\n",statline); */
@@ -156,6 +156,7 @@ int getbtime(void)
 			break;
 		}
 	}
+	fclose(fp);
 
 	if (check==0) {
 		snprintf(errorstring, 512, "btime missing from /proc/stat.");
@@ -168,7 +169,6 @@ int getbtime(void)
 	}
 
 	result = strtoul(statline+6, (char **)NULL, 0);
-	fclose(fp);
 
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__) || defined(__FreeBSD_kernel__)
 	struct timeval btm;
@@ -187,17 +187,6 @@ int getbtime(void)
 	return result;
 }
 
-void addtraffic(uint64_t *destmb, int *destkb, uint64_t srcmb, int srckb)
-{
-        *destmb=*destmb+srcmb;
-        *destkb=*destkb+srckb;
-
-        if (*destkb>=1024) {
-                *destmb+=*destkb/1024;
-                *destkb-=(*destkb/1024)*1024;
-        }
-}
-
 char *getvalue(uint64_t mb, uint64_t kb, int len, int type)
 {
 	static char buffer[64];
@@ -210,11 +199,7 @@ char *getvalue(uint64_t mb, uint64_t kb, int len, int type)
 	}
 
 	if (mb!=0) {
-		if (kb>=1024) {
-			mb+=kb/1024;
-			kb-=(kb/1024)*1024;
-		}
-		kB=(mb*1024)+kb;
+		kB=mbkbtokb(mb, kb);
 	} else {
 		kB=kb;
 	}
@@ -228,35 +213,19 @@ char *getvalue(uint64_t mb, uint64_t kb, int len, int type)
 	if ( (type==2) && (kB==0) ){
 		snprintf(buffer, 64, "%*s    ", len-cfg.unit, "--");
 	} else {
-#if !defined(__OpenBSD__) && !defined(__NetBSD__)
 		/* try to figure out what unit to use */
 		if (kB>=1048576000) { /* 1024*1024*1000 - value >=1000 GiB -> show in TiB */
-			snprintf(buffer, 64, "%'*.*f %s", len, declen, kB/(float)1073741824, getunit(4)); /* 1024*1024*1024 */
+			snprintf(buffer, 64, "%"DECCONV"*.*f %s", len, declen, kB/(float)1073741824, getunit(4)); /* 1024*1024*1024 */
 		} else if (kB>=1024000) { /* 1024*1000 - value >=1000 MiB -> show in GiB */
-			snprintf(buffer, 64, "%'*.*f %s", len, declen, kB/(float)1048576, getunit(3)); /* 1024*1024 */
+			snprintf(buffer, 64, "%"DECCONV"*.*f %s", len, declen, kB/(float)1048576, getunit(3)); /* 1024*1024 */
 		} else if (kB>=1000) {
 			if (type==2) {
 				declen=0;
 			}
-			snprintf(buffer, 64, "%'*.*f %s", len, declen, kB/(float)1024, getunit(2));
+			snprintf(buffer, 64, "%"DECCONV"*.*f %s", len, declen, kB/(float)1024, getunit(2));
 		} else {
-			snprintf(buffer, 64, "%'*"PRIu64" %s", len, kB, getunit(1));
+			snprintf(buffer, 64, "%"DECCONV"*"PRIu64" %s", len, kB, getunit(1));
 		}
-#else
-		/* try to figure out what unit to use */
-		if (kB>=1048576000) { /* 1024*1024*1000 - value >=1000 GiB -> show in TiB */
-			snprintf(buffer, 64, "%*.*f %s", len, declen, kB/(float)1073741824, getunit(4)); /* 1024*1024*1024 */
-		} else if (kB>=1024000) { /* 1024*1000 - value >=1000 MiB -> show in GiB */
-			snprintf(buffer, 64, "%*.*f %s", len, declen, kB/(float)1048576, getunit(3)); /* 1024*1024 */
-		} else if (kB>=1000) {
-			if (type==2) {
-				declen=0;
-			}
-			snprintf(buffer, 64, "%*.*f %s", len, declen, kB/(float)1024, getunit(2));
-		} else {
-			snprintf(buffer, 64, "%*"PRIu64" %s", len, kB, getunit(1));
-		}
-#endif
 	}
 
 	return buffer;
@@ -267,7 +236,6 @@ char *getrate(uint64_t mb, uint64_t kb, uint32_t interval, int len)
 	static char buffer[64];
 	int unit, declen = 2;
 	uint64_t kB;
-	uint32_t limit[3];
 	float rate;
 
 	if (interval==0) {
@@ -276,64 +244,50 @@ char *getrate(uint64_t mb, uint64_t kb, uint32_t interval, int len)
 	}
 
 	if (mb!=0) {
-		if (kb>=1024) {
-			mb+=kb/1024;
-			kb-=(kb/1024)*1024;
-		}
-		kB=(mb*1024)+kb;
+		kB=mbkbtokb(mb, kb);
 	} else {
 		kB=kb;
 	}
 
 	/* convert to proper unit */
 	if (cfg.rateunit) {
-		limit[0] = 1000;
-		limit[1] = 1000000;
-		limit[2] = 1000000000;
 		rate = (kB*8)/(float)interval;
 		unit = 2;
 		if (interval<5) {
 			declen = 0;
 		}
 	} else {
-		limit[0] = 1024;
-		limit[1] = 1024000;
-		limit[2] = 1048576000;
 		rate = kB/(float)interval;
 		unit = cfg.unit;
 	}
 
-	/* tune spacing according to unit */
-	len -= strlen(getrateunit(unit, 1)) + 1;
-	if (len<0) {
-		len = 1;
+	return getratestring(rate, len, declen, unit);
+}
+
+char *gettrafficrate(uint64_t bytes, uint32_t interval, int len)
+{
+	static char buffer[64];
+	int unit, declen = 2;
+	float rate;
+
+	if (interval==0) {
+		snprintf(buffer, 64, "%*s", len, "n/a");
+		return buffer;
 	}
 
-#if !defined(__OpenBSD__) && !defined(__NetBSD__)
-	/* try to figure out what unit to use */
-	if (rate>=limit[2]) {
-		snprintf(buffer, 64, "%'*.2f %s", len, rate/(float)limit[2], getrateunit(unit, 4));
-	} else if (rate>=limit[1]) {
-		snprintf(buffer, 64, "%'*.2f %s", len, rate/(float)limit[1], getrateunit(unit, 3));
-	} else if (rate>=limit[0]) {
-		snprintf(buffer, 64, "%'*.2f %s", len, rate/(float)limit[0], getrateunit(unit, 2));
+	/* convert to proper unit */
+	if (cfg.rateunit) {
+		rate = (bytes*8)/(float)(interval*1024);
+		unit = 2;
+		if (interval<5) {
+			declen = 0;
+		}
 	} else {
-		snprintf(buffer, 64, "%'*.*f %s", len, declen, rate, getrateunit(unit, 1));
+		rate = bytes/(float)(interval*1024);
+		unit = cfg.unit;
 	}
-#else
-	/* try to figure out what unit to use */
-	if (rate>=limit[2]) {
-		snprintf(buffer, 64, "%*.2f %s", len, rate/(float)limit[2], getrateunit(unit, 4));
-	} else if (rate>=limit[1]) {
-		snprintf(buffer, 64, "%*.2f %s", len, rate/(float)limit[1], getrateunit(unit, 3));
-	} else if (rate>=limit[0]) {
-		snprintf(buffer, 64, "%*.2f %s", len, rate/(float)limit[0], getrateunit(unit, 2));
-	} else {
-		snprintf(buffer, 64, "%*.*f %s", len, declen, rate, getrateunit(unit, 1));
-	}
-#endif
 
-	return buffer;
+	return getratestring(rate, len, declen, unit);
 }
 
 uint64_t getscale(uint64_t kb)
@@ -373,8 +327,7 @@ uint64_t getscale(uint64_t kb)
 char *getunit(int index)
 {
 	static char *unit[] = { "na", "KiB", "MiB", "GiB", "TiB",
-                                   "KB",  "MB",  "GB",  "TB",
-                                   "kB",  "MB",  "GB",  "TB" };
+                                   "KB",  "MB",  "GB",  "TB" };
 
 	if (index>UNITCOUNT) {
 		return unit[0];
@@ -394,4 +347,48 @@ char *getrateunit(int unit, int index)
 	} else {
 		return bunit[(unit*UNITCOUNT)+index];
 	}
+}
+
+uint32_t getunitdivider(int unit, int index)
+{
+	uint32_t unitdiv[] = { 0, 0, 1024, 1048576, 1073741824,
+                              0, 1024, 1048576, 1073741824,
+                              0, 1000, 1000000, 1000000000 };
+
+	if (index>UNITCOUNT) {
+		return unitdiv[0];
+	} else {
+		return unitdiv[(unit*UNITCOUNT)+index];
+	}
+}
+
+char *getratestring(float rate, int len, int declen, int unit)
+{
+	static char buffer[64];
+	uint32_t limit[3] = { 1000, 1024000, 1048576000 };
+
+	if (cfg.rateunit) {
+		limit[0] = 1000;
+		limit[1] = 1000000;
+		limit[2] = 1000000000;
+	}
+
+	/* tune spacing according to unit */
+	len -= strlen(getrateunit(unit, 1)) + 1;
+	if (len<0) {
+		len = 1;
+	}
+
+	/* try to figure out what unit to use */
+	if (rate>=limit[2]) {
+		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)getunitdivider(unit, 4), getrateunit(unit, 4));
+	} else if (rate>=limit[1]) {
+		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)getunitdivider(unit, 3), getrateunit(unit, 3));
+	} else if (rate>=limit[0]) {
+		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)getunitdivider(unit, 2), getrateunit(unit, 2));
+	} else {
+		snprintf(buffer, 64, "%"DECCONV"*.*f %s", len, declen, rate, getrateunit(unit, 1));
+	}
+
+	return buffer;
 }

@@ -132,7 +132,7 @@ void drawlegend(int x, int y)
 	gdImageFilledRectangle(im, x-12, y+4, x-6, y+10, crx);
 	gdImageRectangle(im, x-12, y+4, x-6, y+10, ctext);
 	gdImageFilledRectangle(im, x+30, y+4, x+36, y+10, ctx);
-	gdImageRectangle(im, x+30, y+4, x+36, y+10, ctext);	
+	gdImageRectangle(im, x+30, y+4, x+36, y+10, ctext);
 
 }
 
@@ -140,18 +140,8 @@ void drawbar(int x, int y, int len, uint64_t rx, int rxk, uint64_t tx, int txk, 
 {
 	int l;
 
-	if (rxk>=1024) {
-		rx+=rxk/1024;
-		rxk-=(rxk/1024)*1024;
-	}
-
-	if (txk>=1024) {
-		tx+=txk/1024;
-		txk-=(txk/1024)*1024;
-	}
-
-	rx=(rx*1024)+rxk;
-	tx=(tx*1024)+txk;
+	rx=mbkbtokb(rx, rxk);
+	tx=mbkbtokb(tx, txk);
 
 	if ((rx+tx)!=max) {
 		len=((rx+tx)/(float)max)*len;
@@ -254,7 +244,7 @@ void drawhours(int x, int y, int rate)
 		if (rate) {
 			if ((current-data.hour[i].date) > 3600) {
 				data.hour[i].rx = data.hour[i].rx / ratediv;
-				data.hour[i].tx = data.hour[i].tx / ratediv;	
+				data.hour[i].tx = data.hour[i].tx / ratediv;
 			} else {
 				/* scale ongoing hour properly */
 				d = localtime(&data.hour[i].date);
@@ -378,7 +368,7 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 	colorinit();
 
 	if (strcmp(data.nick, data.interface)==0) {
-		snprintf(buffer, 512, "%s", data.interface);	
+		snprintf(buffer, 512, "%s", data.interface);
 	} else {
 		snprintf(buffer, 512, "%s (%s)", data.nick, data.interface);
 	}
@@ -396,7 +386,7 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 			rxp = ( ((data.day[0].rx*1024)+data.day[0].rxk) / (float)(((data.day[0].rx*1024)+data.day[0].rxk)+((data.day[0].tx*1024)+data.day[0].txk)) )*100;
 			txp = (float)100 - rxp;
 		}
-	}	
+	}
 
 	/* do scaling if needed */
 	if ( (data.day[0].rx+data.day[0].tx) < (data.day[1].rx+data.day[1].tx) ) {
@@ -411,7 +401,7 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 
 	/* move graph to center if there's only one to draw for this line */
 	if (!data.day[1].date) {
-		offset = 85; 
+		offset = 85;
 	} else {
 		offset = 0;
 	}
@@ -431,7 +421,7 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 
 	/* change daytemp to today if formated days match */
 	if (strcmp(datebuff, daytemp)==0) {
-		strncpy(daytemp, "today", 32);
+		strncpy_nt(daytemp, "today", 32);
 	}
 
 	snprintf(buffer, 32, "%12s", daytemp);
@@ -468,9 +458,9 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 				rxp = ( ((data.day[1].rx*1024)+data.day[1].rxk) / (float)(((data.day[1].rx*1024)+data.day[1].rxk)+((data.day[1].tx*1024)+data.day[1].txk)) )*100;
 				txp = (float)100 - rxp;
 			}
-		}	
+		}
 
-		/* do scaling if needed */	
+		/* do scaling if needed */
 		if ( (data.day[1].rx+data.day[1].tx) < (data.day[0].rx+data.day[0].tx) ) {
 			if ( (data.day[1].rx+data.day[1].tx)>1024 || (data.day[0].rx+data.day[0].tx)>1024 ) {
 				mod = (data.day[1].rx+data.day[1].tx) / (float)(data.day[0].rx+data.day[0].tx);
@@ -496,7 +486,7 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 
 		/* change daytemp to yesterday if formated days match */
 		if (strcmp(datebuff, daytemp)==0) {
-			strncpy(daytemp, "yesterday", 32);
+			strncpy_nt(daytemp, "yesterday", 32);
 		}
 
 		snprintf(buffer, 32, "%12s", daytemp);
@@ -531,7 +521,7 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 			rxp = ( ((data.month[0].rx*1024)+data.month[0].rxk) / (float)(((data.month[0].rx*1024)+data.month[0].rxk)+((data.month[0].tx*1024)+data.month[0].txk)) )*100;
 			txp = (float)100 - rxp;
 		}
-	}	
+	}
 
 
 	/* do scaling if needed */
@@ -547,7 +537,7 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 
 	/* move graph to center if there's only one to draw for this line */
 	if (!data.month[1].month) {
-		offset = 85; 
+		offset = 85;
 	} else {
 		offset = 0;
 	}
@@ -593,9 +583,9 @@ void drawsummary(int type, int showheader, int showedge, int rate)
 				rxp = ( ((data.month[1].rx*1024)+data.month[1].rxk) / (float)(((data.month[1].rx*1024)+data.month[1].rxk)+((data.month[1].tx*1024)+data.month[1].txk)) )*100;
 				txp = (float)100 - rxp;
 			}
-		}	
+		}
 
-		/* do scaling if needed */	
+		/* do scaling if needed */
 		if ( (data.month[1].rx+data.month[1].tx) < (data.month[0].rx+data.month[0].tx) ) {
 			if ( (data.month[1].rx+data.month[1].tx)>1024 || (data.month[0].rx+data.month[0].tx)>1024 ) {
 				mod = (data.month[1].rx+data.month[1].tx) / (float)(data.month[0].rx+data.month[0].tx);
@@ -711,7 +701,7 @@ void drawoldsummary(int type, int showheader, int showedge, int rate)
 	colorinit();
 
 	if (strcmp(data.nick, data.interface)==0) {
-		snprintf(buffer, 512, "%s", data.interface);	
+		snprintf(buffer, 512, "%s", data.interface);
 	} else {
 		snprintf(buffer, 512, "%s (%s)", data.nick, data.interface);
 	}
@@ -724,7 +714,7 @@ void drawoldsummary(int type, int showheader, int showedge, int rate)
 			rxp = (data.totalrx/(float)(data.totalrx+data.totaltx))*100;
 		} else {
 			rxp = ( ((data.totalrx*1024)+data.totalrxk) / (float)(((data.totalrx*1024)+data.totalrxk)+((data.totaltx*1024)+data.totaltxk)) )*100;
-		}	
+		}
 		txp = (float)100 - rxp;
 	}
 
@@ -732,7 +722,7 @@ void drawoldsummary(int type, int showheader, int showedge, int rate)
 
 	if ( data.day[0].rx==0 || data.day[0].tx==0 || (d->tm_hour*60+d->tm_min)==0 ) {
 		e_rx = e_tx=0;
-	} else {	
+	} else {
 		e_rx = ((data.day[0].rx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 		e_tx = ((data.day[0].tx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 	}
@@ -775,7 +765,7 @@ void drawoldsummary(int type, int showheader, int showedge, int rate)
 
 	/* change daytemp to yesterday if formated days match */
 	if (strcmp(datebuff, daytemp)==0) {
-		strncpy(daytemp, "yesterday", 32);
+		strncpy_nt(daytemp, "yesterday", 32);
 	}
 
 	/* get formated date for today */
@@ -788,7 +778,7 @@ void drawoldsummary(int type, int showheader, int showedge, int rate)
 
 	/* change daytemp to today if formated days match */
 	if (strcmp(datebuff, daytemp2)==0) {
-		strncpy(daytemp2, "today", 32);
+		strncpy_nt(daytemp2, "today", 32);
 	}
 
 	textx = 20;
@@ -835,12 +825,7 @@ void drawoldsummary(int type, int showheader, int showedge, int rate)
 			t=data.day[i].rx+data.day[i].tx;
 			tk=data.day[i].rxk+data.day[i].txk;
 
-			if (tk>=1024) {
-				t+=tk/1024;
-				tk-=(tk/1024)*1024;
-			}
-
-			t=(t*1024)+tk;
+			t=mbkbtokb(t, tk);
 
 			if (t>max) {
 				max=t;
@@ -883,7 +868,7 @@ void drawhourly(int showheader, int showedge, int rate)
 	colorinit();
 
 	if (strcmp(data.nick, data.interface)==0) {
-		snprintf(buffer, 512, "%s / hourly", data.interface);	
+		snprintf(buffer, 512, "%s / hourly", data.interface);
 	} else {
 		snprintf(buffer, 512, "%s (%s) / hourly", data.nick, data.interface);
 	}
@@ -928,7 +913,7 @@ void drawdaily(int showheader, int showedge)
 	colorinit();
 
 	if (strcmp(data.nick, data.interface)==0) {
-		snprintf(buffer, 512, "%s / daily", data.interface);	
+		snprintf(buffer, 512, "%s / daily", data.interface);
 	} else {
 		snprintf(buffer, 512, "%s (%s) / daily", data.nick, data.interface);
 	}
@@ -956,7 +941,7 @@ void drawdaily(int showheader, int showedge)
 		gdImageString(im, gdFontGetSmall(), textx, texty, (unsigned char*)"     day        rx           tx          total", ctext);
 		gdImageLine(im, textx+2, texty+16, textx+296, texty+16, cline);
 		gdImageLine(im, textx+144, texty+2, textx+144, texty+40+(12*lines), cline);
-		gdImageLine(im, textx+222, texty+2, textx+222, texty+40+(12*lines), cline);		
+		gdImageLine(im, textx+222, texty+2, textx+222, texty+40+(12*lines), cline);
 	}
 
 	texty += 20;
@@ -1031,7 +1016,7 @@ void drawdaily(int showheader, int showedge)
 		d=localtime(&data.lastupdated);
 		if ( data.day[0].rx==0 || data.day[0].tx==0 || (d->tm_hour*60+d->tm_min)==0 ) {
 			e_rx=e_tx=0;
-		} else {				
+		} else {
 			e_rx=((data.day[0].rx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 			e_tx=((data.day[0].tx)/(float)(d->tm_hour*60+d->tm_min))*1440;
 		}
@@ -1078,7 +1063,7 @@ void drawmonthly(int showheader, int showedge)
 	colorinit();
 
 	if (strcmp(data.nick, data.interface)==0) {
-		snprintf(buffer, 512, "%s / monthly", data.interface);	
+		snprintf(buffer, 512, "%s / monthly", data.interface);
 	} else {
 		snprintf(buffer, 512, "%s (%s) / monthly", data.nick, data.interface);
 	}
@@ -1241,7 +1226,7 @@ void drawtop(int showheader, int showedge)
 	colorinit();
 
 	if (strcmp(data.nick, data.interface)==0) {
-		snprintf(buffer, 512, "%s / top 10", data.interface);	
+		snprintf(buffer, 512, "%s / top 10", data.interface);
 	} else {
 		snprintf(buffer, 512, "%s (%s) / top 10", data.nick, data.interface);
 	}
@@ -1271,7 +1256,7 @@ void drawtop(int showheader, int showedge)
 		if (lines) {
 			gdImageLine(im, textx+174, texty+2, textx+174, texty+24+(12*lines), cline);
 			gdImageLine(im, textx+252, texty+2, textx+252, texty+24+(12*lines), cline);
-		}	
+		}
 	}
 
 	texty += 20;
@@ -1365,7 +1350,7 @@ void modcolor(int *rgb, int offset, int force)
 			} else if ((rgb[i]+offset)<0) {
 				rgb[i] = 0;
 			} else {
-				rgb[i] += offset; 
+				rgb[i] += offset;
 			}
 		} else {
 			if ((rgb[i]-offset)<0) {
@@ -1373,8 +1358,8 @@ void modcolor(int *rgb, int offset, int force)
 			} else if ((rgb[i]-offset)>255) {
 				rgb[i] = 255;
 			} else {
-				rgb[i] -= offset; 
-			}		
+				rgb[i] -= offset;
+			}
 		}
 	}
 
@@ -1451,7 +1436,7 @@ char *getimagescale(uint64_t kb, int rate)
 				snprintf(buffer, 8, "%s", getrateunit(unit, 2));
 			} else {
 				snprintf(buffer, 8, "%s", getrateunit(unit, 1));
-			}		
+			}
 		} else {
 			if (kb>=1048576000) { /* 1024*1024*1000 - value >=1000 GiB -> show in TiB */
 				snprintf(buffer, 8, "%s", getunit(4));
@@ -1461,7 +1446,7 @@ char *getimagescale(uint64_t kb, int rate)
 				snprintf(buffer, 8, "%s", getunit(2));
 			} else {
 				snprintf(buffer, 8, "%s", getunit(1));
-			}		
+			}
 		}
 
 	}
