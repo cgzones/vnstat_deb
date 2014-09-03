@@ -7,6 +7,8 @@ vnstat (1.12-1) UNRELEASED; urgency=low
   * Refresh patches.
   * Build-depend on check for the new test suite.
   * Install the upstream systemd service file. (Closes: #635751)
+    - Add systemd_user.diff to run vnstatd as user vnstat like the init script
+      does.
 
  -- Felix Geyer <fgeyer@debian.org>  Sat, 13 Jul 2013 09:48:00 +0200
 

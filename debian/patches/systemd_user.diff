@@ -1,0 +1,13 @@
+Description: Run vnstatd as user vnstat.
+Author: Felix Geyer <fgeyer@debian.org>
+
+--- a/examples/systemd/vnstat.service
++++ b/examples/systemd/vnstat.service
+@@ -6,6 +6,7 @@ After=network.target
+ [Service]
+ ExecStart=/usr/sbin/vnstatd -n
+ ExecReload=/bin/kill -HUP $MAINPID
++User=vnstat
+ 
+ [Install]
+ WantedBy=multi-user.target
