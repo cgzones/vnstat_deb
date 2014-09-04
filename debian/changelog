@@ -1,4 +1,4 @@
-vnstat (1.12-1) UNRELEASED; urgency=low
+vnstat (1.12-1) unstable; urgency=low
 
   * New upstream release.
     - Fix: Live traffic meter occasionally showing higher minimum than average
@@ -10,7 +10,7 @@ vnstat (1.12-1) UNRELEASED; urgency=low
     - Add systemd_user.diff to run vnstatd as user vnstat like the init script
       does.
 
- -- Felix Geyer <fgeyer@debian.org>  Sat, 13 Jul 2013 09:48:00 +0200
+ -- Felix Geyer <fgeyer@debian.org>  Wed, 03 Sep 2014 22:55:57 +0200
 
 vnstat (1.11-2) unstable; urgency=low
 
