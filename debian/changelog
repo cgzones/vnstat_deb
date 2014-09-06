@@ -1,3 +1,10 @@
+vnstat (1.12-2) unstable; urgency=medium
+
+  * Fix test failures on non-linux architectures.
+    - Add tests_root_group.diff
+
+ -- Felix Geyer <fgeyer@debian.org>  Sat, 06 Sep 2014 11:15:07 +0200
+
 vnstat (1.12-1) unstable; urgency=low
 
   * New upstream release.
