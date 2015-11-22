@@ -6,6 +6,8 @@ vnstat (1.14-1) UNRELEASED; urgency=medium
     - fix_manpages.diff
     - tests_root_group.diff
   * Refrsh debian_build_system.diff.
+  * Link against subunit to fix building of the tests.
+    - Add link_subunit.diff
 
  -- Felix Geyer <fgeyer@debian.org>  Sun, 22 Nov 2015 11:12:12 +0100
 
