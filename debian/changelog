@@ -1,3 +1,10 @@
+vnstat (1.14-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+    - Auto-detects max. bandwidth of interfaces. (Closes: #804868)
+
+ -- Felix Geyer <fgeyer@debian.org>  Sun, 22 Nov 2015 11:12:12 +0100
+
 vnstat (1.12-2) unstable; urgency=medium
 
   * Fix test failures on non-linux architectures.
