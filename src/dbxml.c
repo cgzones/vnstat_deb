@@ -1,10 +1,8 @@
 #include "common.h"
 #include "dbxml.h"
 
-void showxml(void)
+void showxml(char mode)
 {
-	int i;
-
 	printf(" <interface id=\"%s\">\n", data.interface);
 
 	printf("  <id>%s</id>\n", data.interface);
@@ -20,6 +18,39 @@ void showxml(void)
 	printf("  <traffic>\n");
 	printf("   <total><rx>%"PRIu64"</rx><tx>%"PRIu64"</tx></total>\n", (data.totalrx*1024)+data.totalrxk, (data.totaltx*1024)+data.totaltxk);
 
+	switch (mode) {
+		case 'd':
+			xmldays();
+			break;
+		case 'm':
+			xmlmonths();
+			break;
+		case 't':
+			xmltops();
+			break;
+		case 'h':
+			xmlhours();
+			break;
+		case 'a':
+		default:
+			xmldays();
+			printf(",");
+			xmlmonths();
+			printf(",");
+			xmltops();
+			printf(",");
+			xmlhours();
+			break;
+	}
+
+	printf("  </traffic>\n");
+	printf(" </interface>\n");
+}
+
+void xmldays(void)
+{
+	int i;
+
 	printf("   <days>\n");
 	for (i=0;i<=29;i++) {
 		if (data.day[i].used) {
@@ -29,6 +60,11 @@ void showxml(void)
 		}
 	}
 	printf("   </days>\n");
+}
+
+void xmlmonths(void)
+{
+	int i;
 
 	printf("   <months>\n");
 	for (i=0;i<=11;i++) {
@@ -39,6 +75,11 @@ void showxml(void)
 		}
 	}
 	printf("   </months>\n");
+}
+
+void xmltops(void)
+{
+	int i;
 
 	printf("   <tops>\n");
 	for (i=0;i<=9;i++) {
@@ -49,6 +90,11 @@ void showxml(void)
 		}
 	}
 	printf("   </tops>\n");
+}
+
+void xmlhours(void)
+{
+	int i;
 
 	printf("   <hours>\n");
 	for (i=0;i<=23;i++) {
@@ -59,45 +105,32 @@ void showxml(void)
 		}
 	}
 	printf("   </hours>\n");
-
-	printf("  </traffic>\n");
-	printf(" </interface>\n");
-
 }
 
 void xmldate(time_t *date, int type)
 {
 	struct tm *d;
-	char *buffer;
-	char *type1 = "<date><year>%Y</year><month>%m</month><day>%d</day></date>";
-	char *type2 = "<date><year>%Y</year><month>%m</month><day>%d</day></date><time><hour>%H</hour><minute>%M</minute></time>";
-	char *type3 = "<date><year>%Y</year><month>%m</month></date>";
+	char *type1 = "<date><year>%d</year><month>%02d</month><day>%02d</day></date>";
+	char *type2 = "<date><year>%d</year><month>%02d</month><day>%02d</day></date><time><hour>%02d</hour><minute>%02d</minute></time>";
+	char *type3 = "<date><year>%d</year><month>%02d</month></date>";
 
 	d = localtime(date);
 
 	if (type == 1) {
-		buffer = malloc(strlen(type1)+3);
-		if (buffer == NULL) {
-			panicexit(__FILE__, __LINE__);
-		}
-		strftime(buffer, strlen(type1)+3, type1, d);
-		printf("%s", buffer);
-		free(buffer);
+		printf(type1, 1900+d->tm_year, 1+d->tm_mon, d->tm_mday);
 	} else if (type == 2) {
-		buffer = malloc(strlen(type2)+3);
-		if (buffer == NULL) {
-			panicexit(__FILE__, __LINE__);
-		}
-		strftime(buffer, strlen(type2)+3, type2, d);
-		printf("%s", buffer);
-		free(buffer);
+		printf(type2, 1900+d->tm_year, 1+d->tm_mon, d->tm_mday, d->tm_hour, d->tm_min);
 	} else if (type == 3) {
-		buffer = malloc(strlen(type3)+3);
-		if (buffer == NULL) {
-			panicexit(__FILE__, __LINE__);
-		}
-		strftime(buffer, strlen(type3)+3, type3, d);
-		printf("%s", buffer);
-		free(buffer);
+		printf(type3, 1900+d->tm_year, 1+d->tm_mon);
 	}
+}
+
+void xmlheader(void)
+{
+	printf("<vnstat version=\"%s\" xmlversion=\"%d\">\n", VNSTATVERSION, XMLVERSION);
+}
+
+void xmlfooter(void)
+{
+	printf("</vnstat>\n");
 }

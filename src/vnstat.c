@@ -1,5 +1,5 @@
 /*
-vnStat - Copyright (c) 2002-2014 Teemu Toivola <tst@iki.fi>
+vnStat - Copyright (c) 2002-2015 Teemu Toivola <tst@iki.fi>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,18 +19,20 @@ vnStat - Copyright (c) 2002-2014 Teemu Toivola <tst@iki.fi>
 #include "ifinfo.h"
 #include "traffic.h"
 #include "dbxml.h"
+#include "dbjson.h"
 #include "dbshow.h"
 #include "dbaccess.h"
 #include "dbmerge.h"
 #include "misc.h"
 #include "cfg.h"
+#include "ibw.h"
 #include "vnstat.h"
 
 int main(int argc, char *argv[]) {
 
 	int i, currentarg;
-	DIR *dir=NULL;
-	struct dirent *di=NULL;
+	DIR *dir = NULL;
+	struct dirent *di = NULL;
 	PARAMS p;
 
 	initparams(&p);
@@ -59,16 +61,11 @@ int main(int argc, char *argv[]) {
 	if (!loadcfg(p.cfgfile)) {
 		return 1;
 	}
-
-	if (cfg.locale[0]!='-' && strlen(cfg.locale)>0) {
-		setlocale(LC_ALL, cfg.locale);
-	} else {
-		if (getenv("LC_ALL")) {
-			setlocale(LC_ALL, getenv("LC_ALL"));
-		} else {
-			setlocale(LC_ALL, "");
-		}
+	if (!ibwloadcfg(p.cfgfile)) {
+		return 1;
 	}
+
+	configlocale();
 	strncpy_nt(p.interface, "default", 32);
 	strncpy_nt(p.definterface, cfg.iface, 32);
 	strncpy_nt(p.nick, "none", 32);
@@ -115,7 +112,6 @@ int main(int argc, char *argv[]) {
 			}
 		} else if ((strcmp(argv[currentarg],"--style"))==0) {
 			if (currentarg+1<argc && isdigit(argv[currentarg+1][0])) {
-				cfg.ostyle = atoi(argv[currentarg+1]);
 				if (cfg.ostyle > 4 || cfg.ostyle < 0) {
 					printf("Error: Invalid style parameter \"%d\" for --style.\n", cfg.ostyle);
 					printf(" Valid parameters:\n");
@@ -126,6 +122,7 @@ int main(int argc, char *argv[]) {
 					printf("    4 - disable terminal control characters in -l / --live\n");
 					return 1;
 				}
+				cfg.ostyle = atoi(argv[currentarg+1]);
 				if (debug)
 					printf("Style changed: %d\n", cfg.ostyle);
 				currentarg++;
@@ -205,12 +202,41 @@ int main(int argc, char *argv[]) {
 		} else if (strcmp(argv[currentarg],"--oneline")==0) {
 			cfg.qmode=9;
 		} else if (strcmp(argv[currentarg],"--xml")==0) {
+			if (currentarg+1<argc && argv[currentarg+1][0]!='-') {
+				p.xmlmode = argv[currentarg+1][0];
+				if (strlen(argv[currentarg+1])!=1 || strchr("ahdmt", p.xmlmode)==NULL) {
+					printf("Error: Invalid mode parameter \"%s\" for --xml.\n", argv[currentarg+1]);
+					printf(" Valid parameters:\n");
+					printf("    a - all (default)\n");
+					printf("    h - only hours\n");
+					printf("    d - only days\n");
+					printf("    m - only months\n");
+					printf("    t - only top 10\n");
+					return 1;
+				}
+				currentarg++;
+			}
 			cfg.qmode=8;
+		} else if (strcmp(argv[currentarg],"--json")==0) {
+			if (currentarg+1<argc && argv[currentarg+1][0]!='-') {
+				p.jsonmode = argv[currentarg+1][0];
+				if (strlen(argv[currentarg+1])!=1 || strchr("ahdmt", p.jsonmode)==NULL) {
+					printf("Error: Invalid mode parameter \"%s\" for --json.\n", argv[currentarg+1]);
+					printf(" Valid parameters:\n");
+					printf("    a - all (default)\n");
+					printf("    h - only hours\n");
+					printf("    d - only days\n");
+					printf("    m - only months\n");
+					printf("    t - only top 10\n");
+					return 1;
+				}
+				currentarg++;
+			}
+			cfg.qmode=10;
 		} else if (strcmp(argv[currentarg],"--savemerged")==0) {
 			p.savemerged=1;
 		} else if ((strcmp(argv[currentarg],"-ru")==0) || (strcmp(argv[currentarg],"--rateunit"))==0) {
 			if (currentarg+1<argc && isdigit(argv[currentarg+1][0])) {
-				cfg.rateunit = atoi(argv[currentarg+1]);
 				if (cfg.rateunit > 1 || cfg.rateunit < 0) {
 					printf("Error: Invalid parameter \"%d\" for --rateunit.\n", cfg.rateunit);
 					printf(" Valid parameters:\n");
@@ -218,6 +244,7 @@ int main(int argc, char *argv[]) {
 					printf("    1 - bits\n");
 					return 1;
 				}
+				cfg.rateunit = atoi(argv[currentarg+1]);
 				if (debug)
 					printf("Rateunit changed: %d\n", cfg.rateunit);
 				currentarg++;
@@ -231,20 +258,17 @@ int main(int argc, char *argv[]) {
 			p.active=1;
 			p.query=0;
 		} else if ((strcmp(argv[currentarg],"-tr")==0) || (strcmp(argv[currentarg],"--traffic")==0)) {
-			if (currentarg+1<argc) {
-				if (isdigit(argv[currentarg+1][0])) {
-					cfg.sampletime=atoi(argv[currentarg+1]);
-					currentarg++;
-					p.traffic=1;
-					p.query=0;
-					continue;
-				}
+			if (currentarg+1<argc && isdigit(argv[currentarg+1][0])) {
+				cfg.sampletime=atoi(argv[currentarg+1]);
+				currentarg++;
+				p.traffic=1;
+				p.query=0;
+				continue;
 			}
 			p.traffic=1;
 			p.query=0;
 		} else if ((strcmp(argv[currentarg],"-l")==0) || (strcmp(argv[currentarg],"--live")==0)) {
 			if (currentarg+1<argc && argv[currentarg+1][0]!='-') {
-				p.livemode = atoi(argv[currentarg+1]);
 				if (!isdigit(argv[currentarg+1][0]) || p.livemode > 1 || p.livemode < 0) {
 					printf("Error: Invalid mode parameter \"%s\" for -l / --live.\n", argv[currentarg+1]);
 					printf(" Valid parameters:\n");
@@ -252,6 +276,7 @@ int main(int argc, char *argv[]) {
 					printf("    1 - show transfer counters\n");
 					return 1;
 				}
+				p.livemode = atoi(argv[currentarg+1]);
 				currentarg++;
 			}
 			p.livetraffic=1;
@@ -275,7 +300,7 @@ int main(int argc, char *argv[]) {
 			p.delete=1;
 			p.query=0;
 		} else if (strcmp(argv[currentarg],"--iflist")==0) {
-			getiflist(&p.ifacelist);
+			getiflist(&p.ifacelist, 1);
 			printf("Available interfaces: %s\n", p.ifacelist);
 			free(p.ifacelist);
 			return 0;
@@ -351,7 +376,7 @@ int main(int argc, char *argv[]) {
 
 		/* give more help if there's no database */
 		if (p.files==0) {
-			getiflist(&p.ifacelist);
+			getiflist(&p.ifacelist, 1);
 			printf("No database found, nothing to do. Use --help for help.\n\n");
 			printf("A new database can be created with the following command:\n");
 			printf("    %s --create -i eth0\n\n", argv[0]);
@@ -393,8 +418,10 @@ void initparams(PARAMS *p)
 	p->defaultiface = 1;
 	p->delete=0;
 	p->livemode = 0;
-    p->ifacelist = NULL;
+	p->ifacelist = NULL;
 	p->cfgfile[0] = '\0';
+	p->jsonmode = 'a';
+	p->xmlmode = 'a';
 }
 
 int synccounters(const char *iface, const char *dirname)
@@ -422,7 +449,7 @@ void showhelp(PARAMS *p)
 			printf("         -d,  --days           show days\n");
 			printf("         -m,  --months         show months\n");
 			printf("         -w,  --weeks          show weeks\n");
-			printf("         -t,  --top10          show top10\n");
+			printf("         -t,  --top10          show top 10 days\n");
 			printf("         -s,  --short          use short output\n");
 			printf("         -u,  --update         update database\n");
 			printf("         -i,  --iface          select interface (default: %s)\n", p->definterface);
@@ -445,12 +472,13 @@ void showlonghelp(PARAMS *p)
 			printf("         -d, --days            show days\n");
 			printf("         -m, --months          show months\n");
 			printf("         -w, --weeks           show weeks\n");
-			printf("         -t, --top10           show top10\n");
+			printf("         -t, --top10           show top 10 days\n");
 			printf("         -s, --short           use short output\n");
 			printf("         -ru, --rateunit       swap configured rate unit\n");
 			printf("         --oneline             show simple parseable format\n");
 			printf("         --exportdb            dump database in text format\n");
 			printf("         --importdb            import previously exported database\n");
+			printf("         --json                show database in json format\n");
 			printf("         --xml                 show database in xml format\n");
 
 			printf("   Modify:\n");
@@ -462,7 +490,7 @@ void showlonghelp(PARAMS *p)
 			printf("         --enable              enable interface\n");
 			printf("         --disable             disable interface\n");
 			printf("         --nick                set a nickname for interface\n");
-			printf("         --cleartop            clear the top10\n");
+			printf("         --cleartop            clear the top 10\n");
 			printf("         --rebuildtotal        rebuild total transfers from months\n");
 
 			printf("   Misc:\n");
@@ -617,7 +645,7 @@ void handlecleartop10(PARAMS *p)
 		cleartop10(p->interface, p->dirname);
 		p->query=0;
 	} else {
-		printf("Warning:\nThe current option would clear the top10 for \"%s\".\n", p->interface);
+		printf("Warning:\nThe current option would clear the top 10 for \"%s\".\n", p->interface);
 		printf("Use --force in order to really do that.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -689,7 +717,7 @@ void handlecreate(PARAMS *p)
 	}
 
 	if (!getifinfo(p->interface) && !p->force) {
-		getiflist(&p->ifacelist);
+		getiflist(&p->ifacelist, 1);
 		printf("Only available interfaces can be added for monitoring.\n\n");
 		printf("The following interfaces are currently available:\n    %s\n", p->ifacelist);
 		free(p->ifacelist);
@@ -697,7 +725,7 @@ void handlecreate(PARAMS *p)
 	}
 
 	if (checkdb(p->interface, p->dirname)) {
-		printf("Error: Database for interface \"%s\" already exists.\n", data.interface);
+		printf("Error: Database for interface \"%s\" already exists.\n", p->interface);
 		exit(EXIT_FAILURE);
 	}
 
@@ -717,8 +745,8 @@ void handlecreate(PARAMS *p)
 
 void handleupdate(PARAMS *p)
 {
-	DIR *dir=NULL;
-	struct dirent *di=NULL;
+	DIR *dir = NULL;
+	struct dirent *di = NULL;
 	time_t current;
 
 	if (!p->update) {
@@ -804,7 +832,7 @@ void handleupdate(PARAMS *p)
 		}
 
 		if (!getifinfo(data.interface) && !p->force) {
-			getiflist(&p->ifacelist);
+			getiflist(&p->ifacelist, 1);
 			printf("Only available interfaces can be added for monitoring.\n\n");
 			printf("The following interfaces are currently available:\n    %s\n", p->ifacelist);
 			free(p->ifacelist);
@@ -834,98 +862,98 @@ void handleupdate(PARAMS *p)
 
 void handleshowdatabases(PARAMS *p)
 {
-	DIR *dir=NULL;
-	struct dirent *di=NULL;
+	DIR *dir = NULL;
+	struct dirent *di = NULL;
+	int dbcount = 0;
 
 	if (!p->query) {
 		return;
 	}
 
-	/* show all interfaces if -i isn't specified */
-	if (p->defaultiface) {
-
-		if (p->files==0) {
-			/* printf("No database found.\n"); */
-			p->query=0;
-		} else if ((cfg.qmode==0 || cfg.qmode==8) && (p->files>1)) {
-
-			if (cfg.qmode==0) {
-				if (cfg.ostyle!=0) {
-					printf("\n                      rx      /      tx      /     total    /   estimated\n");
-				} else {
-					printf("\n                      rx      /      tx      /     total\n");
-				}
-			} else {
-				printf("<vnstat version=\"%s\" xmlversion=\"%d\">\n", VNSTATVERSION, XMLVERSION);
-			}
-			if ((dir=opendir(p->dirname))==NULL) {
-				return;
-			}
-			while ((di=readdir(dir))) {
-				if ((di->d_name[0]=='.') || (strcmp(di->d_name, DATABASEFILE)==0)) {
-					continue;
-				}
-				strncpy_nt(p->interface, di->d_name, 32);
-				if (debug)
-					printf("\nProcessing file \"%s/%s\"...\n", p->dirname, p->interface);
-				p->newdb=readdb(p->interface, p->dirname);
-				if (!p->newdb) {
-					if (cfg.qmode==0) {
-						showdb(5);
-					} else {
-						showxml();
-					}
-				}
-			}
-			closedir(dir);
-			if (cfg.qmode==8) {
-				printf("</vnstat>\n");
-			}
-
-		/* show in qmode if there's only one file or qmode!=0 */
-		} else {
-			if (!p->merged) {
-				p->newdb=readdb(p->definterface, p->dirname);
-			}
-			if (!p->newdb) {
-				if (cfg.qmode==5) {
-					if (cfg.ostyle!=0) {
-						printf("\n                      rx      /      tx      /     total    /   estimated\n");
-					} else {
-						printf("\n                      rx      /      tx      /     total\n");
-					}
-				}
-				if (cfg.qmode!=8) {
-					showdb(cfg.qmode);
-				} else {
-					printf("<vnstat version=\"%s\" xmlversion=\"%d\">\n", VNSTATVERSION, XMLVERSION);
-					showxml();
-					printf("</vnstat>\n");
-				}
-			}
-		}
-
 	/* show only specified file */
-	} else {
-		if (!p->merged) {
-			p->newdb=readdb(p->interface, p->dirname);
-		}
-		if (!p->newdb) {
-			if (cfg.qmode==5) {
-				if (cfg.ostyle!=0) {
-					printf("\n                      rx      /      tx      /     total    /   estimated\n");
-				} else {
-					printf("\n                      rx      /      tx      /     total\n");
-				}
-			}
-			if (cfg.qmode!=8) {
-				showdb(cfg.qmode);
+	if (!p->defaultiface) {
+		showoneinterface(p, p->interface);
+		return;
+	}
+
+	/* show all interfaces if -i isn't specified */
+	if (p->files==0) {
+		/* printf("No database found.\n"); */
+		p->query=0;
+	} else if ((cfg.qmode==0 || cfg.qmode==8 || cfg.qmode==10) && (p->files>1)) {
+
+		if (cfg.qmode==0) {
+			if (cfg.ostyle!=0) {
+				printf("\n                      rx      /      tx      /     total    /   estimated\n");
 			} else {
-				printf("<vnstat version=\"%s\" xmlversion=\"%d\">\n", VNSTATVERSION, XMLVERSION);
-				showxml();
-				printf("</vnstat>\n");
+				printf("\n                      rx      /      tx      /     total\n");
 			}
+		} else if (cfg.qmode==8) {
+			xmlheader();
+		} else if (cfg.qmode==10) {
+			jsonheader();
 		}
+		if ((dir=opendir(p->dirname))==NULL) {
+			return;
+		}
+		while ((di=readdir(dir))) {
+			if ((di->d_name[0]=='.') || (strcmp(di->d_name, DATABASEFILE)==0)) {
+				continue;
+			}
+			strncpy_nt(p->interface, di->d_name, 32);
+			if (debug)
+				printf("\nProcessing file \"%s/%s\"...\n", p->dirname, p->interface);
+			p->newdb=readdb(p->interface, p->dirname);
+			if (p->newdb) {
+				continue;
+			}
+			if (cfg.qmode==0) {
+				showdb(5);
+			} else if (cfg.qmode==8) {
+				showxml(p->xmlmode);
+			} else if (cfg.qmode==10) {
+				showjson(dbcount, p->jsonmode);
+			}
+			dbcount++;
+		}
+		closedir(dir);
+		if (cfg.qmode==8) {
+			xmlfooter();
+		} else if (cfg.qmode==10) {
+			jsonfooter();
+		}
+
+	/* show in qmode if there's only one file or qmode!=0 */
+	} else {
+		showoneinterface(p, p->definterface);
+	}
+}
+
+void showoneinterface(PARAMS *p, const char *interface)
+{
+	if (!p->merged) {
+		p->newdb=readdb(interface, p->dirname);
+	}
+	if (p->newdb) {
+		return;
+	}
+	if (cfg.qmode==5) {
+		if (cfg.ostyle!=0) {
+			printf("\n                      rx      /      tx      /     total    /   estimated\n");
+		} else {
+			printf("\n                      rx      /      tx      /     total\n");
+		}
+	}
+	if (cfg.qmode!=8 && cfg.qmode!=10) {
+		showdb(cfg.qmode);
+	} else if (cfg.qmode==8) {
+		xmlheader();
+		showxml(p->xmlmode);
+		xmlfooter();
+	} else if (cfg.qmode==10) {
+		jsonheader();
+		showjson(0, p->jsonmode);
+		jsonfooter();
 	}
 }
 

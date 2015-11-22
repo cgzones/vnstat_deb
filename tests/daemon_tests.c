@@ -34,7 +34,7 @@ END_TEST
 
 START_TEST(getgroup_root_string)
 {
-#if defined(__linux__)
+#if defined(__linux__) || defined(__GNU__) || defined(__GLIBC__)
 	ck_assert_int_eq((int)getgroup("root"), 0);
 #else
 	ck_assert_int_eq((int)getgroup("wheel"), 0);
@@ -839,7 +839,6 @@ END_TEST
 
 void add_daemon_tests(Suite *s)
 {
-	/* Config test cases */
 	TCase *tc_daemon = tcase_create("Daemon");
 	tcase_add_test(tc_daemon, getuser_root_string);
 	tcase_add_test(tc_daemon, getuser_root_numeric);

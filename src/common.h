@@ -104,9 +104,16 @@ and most can be changed later from the config file.
 /* default locale */
 #define LOCALE "-"
 
+/* bandwidth detection, 0 = feature disabled */
+#define BWDETECT 1
+#define BWDETECTINTERVAL 5
+
 /* default maximum bandwidth (Mbit) for all interfaces */
 /* 0 = feature disabled */
-#define DEFMAXBW 100
+#define DEFMAXBW 1000
+
+/* maximum allowed config value for bandwidth */
+#define BWMAX 50000
 
 /* how many seconds should sampling take by default */
 #define DEFSAMPTIME 5
@@ -135,6 +142,9 @@ and most can be changed later from the config file.
 /* log trafficless days by default */
 #define TRAFLESSDAY 1
 
+/* assume that locale can be UTF-n when enabled */
+#define UTFLOCALE 1
+
 /* how many times try file locking before giving up */
 /* each try takes about a second */
 #define LOCKTRYLIMIT 5
@@ -144,11 +154,15 @@ and most can be changed later from the config file.
 #define DBVERSION 3
 
 /* version string */
-#define VNSTATVERSION "1.12"
+#define VNSTATVERSION "1.14"
 
 /* xml format version */
 /* 1 = 1.7- */
 #define XMLVERSION 1
+
+/* json format version */
+/* 1 = 1.13- */
+#define JSONVERSION 1
 
 /* --oneline format version */
 #define ONELINEVERSION 1
@@ -209,12 +223,12 @@ typedef struct {
 	char rxchar[2], txchar[2], rxhourchar[2], txhourchar[2];
 	char cbg[8], cedge[8], cheader[8], cheadertitle[8], cheaderdate[8], ctext[8];
 	char cline[8], clinel[8], cvnstat[8], crx[8], crxd[8], ctx[8], ctxd[8];
-	short unit, ostyle, rateunit, bvar, qmode, sampletime, hourlyrate, summaryrate;
-	short monthrotate, maxbw, flock, spacecheck, traflessday, transbg, slayout;
+	int32_t unit, ostyle, rateunit, bvar, qmode, sampletime, hourlyrate, summaryrate;
+	int32_t monthrotate, maxbw, flock, spacecheck, traflessday, transbg, slayout;
 	char logfile[512], pidfile[512];
 	char daemonuser[33], daemongroup[33];
-	short updateinterval, pollinterval, saveinterval, offsaveinterval, savestatus, uselogging;
-	short createdirs, updatefileowner;
+	int32_t updateinterval, pollinterval, saveinterval, offsaveinterval, savestatus, uselogging;
+	int32_t createdirs, updatefileowner, bwdetection, bwdetectioninterval, utflocale;
 } CFG;
 
 /* internal interface information structure */
@@ -264,7 +278,10 @@ typedef struct {
 
 typedef struct ibwnode {
 	char interface[32];
-	int limit;
+	uint32_t limit;
+	uint32_t fallback;
+	short retries;
+	time_t detected;
 	struct ibwnode *next;
 } ibwnode;
 
