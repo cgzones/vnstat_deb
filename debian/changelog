@@ -1,4 +1,4 @@
-vnstat (1.14-1) UNRELEASED; urgency=medium
+vnstat (1.14-1) unstable; urgency=medium
 
   * New upstream release.
     - Auto-detects max. bandwidth of interfaces. (Closes: #804868)
@@ -9,7 +9,7 @@ vnstat (1.14-1) UNRELEASED; urgency=medium
   * Link against subunit to fix building of the tests.
     - Add link_subunit.diff
 
- -- Felix Geyer <fgeyer@debian.org>  Sun, 22 Nov 2015 11:12:12 +0100
+ -- Felix Geyer <fgeyer@debian.org>  Sun, 22 Nov 2015 11:28:51 +0100
 
 vnstat (1.12-2) unstable; urgency=medium
 
