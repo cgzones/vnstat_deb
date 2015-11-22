@@ -1,5 +1,3 @@
 debian_build_system.diff
-fix_manpages.diff
 pidfile_path.diff
 systemd_user.diff
-tests_root_group.diff

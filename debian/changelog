@@ -2,6 +2,9 @@ vnstat (1.14-1) UNRELEASED; urgency=medium
 
   * New upstream release.
     - Auto-detects max. bandwidth of interfaces. (Closes: #804868)
+  * Drop patches that have been applied upstream:
+    - fix_manpages.diff
+    - tests_root_group.diff
 
  -- Felix Geyer <fgeyer@debian.org>  Sun, 22 Nov 2015 11:12:12 +0100
 
