@@ -5,6 +5,7 @@ vnstat (1.14-1) UNRELEASED; urgency=medium
   * Drop patches that have been applied upstream:
     - fix_manpages.diff
     - tests_root_group.diff
+  * Refrsh debian_build_system.diff.
 
  -- Felix Geyer <fgeyer@debian.org>  Sun, 22 Nov 2015 11:12:12 +0100
 

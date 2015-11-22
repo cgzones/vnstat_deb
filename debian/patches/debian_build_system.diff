@@ -1,6 +1,6 @@
 --- a/Makefile
 +++ b/Makefile
-@@ -33,30 +33,12 @@
+@@ -35,30 +35,12 @@ debug:
  install:
  	@echo "Installing vnStat..."
  
@@ -29,13 +29,12 @@
 -	fi
 -
  # install default config if such doesn't exist
- 	@if [ ! -f "$(DESTDIR)/etc/vnstat.conf" ]; \
- 	then echo "Installing config to $(DESTDIR)/etc/vnstat.conf"; \
-@@ -81,23 +63,6 @@
- 	then echo install -m 644 man/vnstati.1 $(MAN)/man1; \
+ 	@if [ ! -f "$(ETC)/vnstat.conf" ]; \
+ 	then echo "Installing config to $(ETC)/vnstat.conf"; \
+@@ -84,23 +66,6 @@ install:
  	install -m 644 man/vnstati.1 $(MAN)/man1; \
  	fi
--	
+ 
 -	@if [ -f "$(MAN)/man1/vnstat.1.gz" ]; \
 -	then gzip -f9 $(MAN)/man1/vnstat.1; \
 -	gzip -f9 $(MAN)/man1/vnstatd.1; \
@@ -52,6 +51,7 @@
 -	@if [ -f "$(MAN)/man1/vnstat.conf.1" ]; \
 -	then rm -f $(MAN)/man1/vnstat.conf.1; \
 -	fi
- 
+-
  	@echo " "
  	@echo "No service file or startup script has been installed. See the"
+ 	@echo "INSTALL document for instructions on how to enable vnStat."
