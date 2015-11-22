@@ -46,6 +46,10 @@ void printcfgfile(void)
 	printf("# used rate unit (0 = bytes, 1 = bits)\n");
 	printf("RateUnit %d\n\n", cfg.rateunit);
 
+	printf("# try to detect interface maximum bandwidth, 0 = disable feature\n");
+	printf("# MaxBandwidth will be used as fallback value when enabled\n");
+	printf("BandwidthDetection %d\n\n", cfg.bwdetection);
+
 	printf("# maximum bandwidth (Mbit) for all interfaces, 0 = disable feature\n# (unless interface specific limit is given)\n");
 	printf("MaxBandwidth %d\n\n", cfg.maxbw);
 
@@ -101,6 +105,10 @@ void printcfgfile(void)
 
 	printf("# how often (in minutes) data is saved when all interface are offline\n");
 	printf("OfflineSaveInterval %d\n\n", cfg.offsaveinterval);
+
+	printf("# how often (in minutes) bandwidth detection is redone when\n");
+	printf("# BandwidthDetection is enabled (0 = disabled)\n");
+	printf("BandwidthDetectionInterval %d\n\n", cfg.bwdetectioninterval);
 
 	printf("# force data save when interface status changes (1 = enabled, 0 = disabled)\n");
 	printf("SaveOnStatusChange %d\n\n", cfg.savestatus);
@@ -158,8 +166,7 @@ void printcfgfile(void)
 int loadcfg(const char *cfgfile)
 {
 	FILE *fd;
-	char buffer[512];
-	int i, j, k, linelen, cfglen, tryhome;
+	int i, linelen, cfglen;
 
 	char value[512], cfgline[512];
 
@@ -179,6 +186,7 @@ int loadcfg(const char *cfgfile)
 		{ "UnitMode", 0, &cfg.unit, 0, 0 },
 		{ "OutputStyle", 0, &cfg.ostyle, 0, 0 },
 		{ "RateUnit", 0, &cfg.rateunit, 0, 0 },
+		{ "BandwidthDetection", 0, &cfg.bwdetection, 0, 0 },
 		{ "MaxBandwidth", 0, &cfg.maxbw, 0, 0 },
 		{ "Sampletime", 0, &cfg.sampletime, 0, 0 },
 		{ "QueryMode", 0, &cfg.qmode, 0, 0 },
@@ -192,6 +200,7 @@ int loadcfg(const char *cfgfile)
 		{ "PollInterval", 0, &cfg.pollinterval, 0, 0 },
 		{ "SaveInterval", 0, &cfg.saveinterval, 0, 0 },
 		{ "OfflineSaveInterval", 0, &cfg.offsaveinterval, 0, 0 },
+		{ "BandwidthDetectionInterval", 0, &cfg.bwdetectioninterval, 0, 0 },
 		{ "SaveOnStatusChange", 0, &cfg.savestatus, 0, 0 },
 		{ "UseLogging", 0, &cfg.uselogging, 0, 0 },
 		{ "CreateDirs", 0, &cfg.createdirs, 0, 0 },
@@ -218,53 +227,12 @@ int loadcfg(const char *cfgfile)
 		{ 0, 0, 0, 0, 0 }
 	};
 
-	ifacebw = NULL;
-
-	/* clear buffer */
-	for (i=0; i<512; i++) {
-		buffer[i] = '\0';
-	}
-
 	/* load default config */
 	defaultcfg();
 
-	/* possible config files: 1) --config   2) $HOME/.vnstatrc   3) /etc/vnstat.conf   4) none */
-
-	if (cfgfile[0]!='\0') {
-
-		/* try to open given file */
-		if ((fd=fopen(cfgfile, "r"))!=NULL) {
-			if (debug)
-				printf("Config file: --config\n");
-		} else {
-			snprintf(errorstring, 512, "Unable to open given config file \"%s\": %s\n", cfgfile, strerror(errno));
-			printe(PT_Error);
-			return 0;
-		}
-
-	} else {
-
-		if (getenv("HOME")) {
-			strncpy_nt(buffer, getenv("HOME"), 500);
-			strcat(buffer, "/.vnstatrc");
-			tryhome = 1;
-		} else {
-			tryhome = 0;
-		}
-
-		/* try to open first available config file */
-		if (tryhome && (fd=fopen(buffer, "r"))!=NULL) {
-			if (debug)
-				printf("Config file: $HOME/.vnstatrc\n");
-		} else if ((fd=fopen("/etc/vnstat.conf", "r"))!=NULL) {
-			if (debug)
-				printf("Config file: /etc/vnstat.conf\n");
-		} else {
-			if (debug)
-				printf("Config file: none\n");
-			return 1;
-		}
-	}
+	i = opencfgfile(cfgfile, &fd);
+	if (i != 2)
+		return i;
 
 	rewind(fd);
 
@@ -272,93 +240,47 @@ int loadcfg(const char *cfgfile)
 	while (!feof(fd)) {
 
 		cfgline[0] = '\0';
-
-		/* get current line */
 		if (fgets(cfgline, 512, fd)==NULL) {
 			break;
 		}
 
 		linelen = (int)strlen(cfgline);
-		if (linelen>2 && cfgline[0]!='#') {
+		if (linelen<=2 || cfgline[0]=='#') {
+			continue;
+		}
 
-			for (i=0; cset[i].name!=0; i++) {
+		for (i=0; cset[i].name!=0; i++) {
 
-				if (cset[i].found) {
-					continue;
-				}
+			if (cset[i].found) {
+				continue;
+			}
 
-				cfglen = (int)strlen(cset[i].name);
-				if ( (linelen>=(cfglen+2)) && (strncasecmp(cfgline, cset[i].name, cfglen)==0) ) {
+			cfglen = (int)strlen(cset[i].name);
+			if ( (linelen<(cfglen+2)) || (strncasecmp(cfgline, cset[i].name, cfglen)!=0) ) {
+				continue;
+			}
 
-					/* clear value buffer */
-					for (j=0; j<512; j++) {
-						value[j]='\0';
-					}
+			if (!extractcfgvalue(value, cfgline, cfglen)) {
+				if (debug)
+					printf("  c: %s   -> \"%s\" with no value, keeping default.\n", cfgline, cset[i].name);
+				cset[i].found = 1;
+				break;
+			}
 
-					/* search value */
-					j = 0;
-					for (k=cfglen; k<linelen; k++) {
-						if (cfgline[k]=='\n' || cfgline[k]=='\r') {
-							break;
-						} else if (cfgline[k]=='\"') {
-							if (j==0) {
-								continue;
-							} else {
-								break;
-							}
-						} else {
-							if (j==0 && (cfgline[k]==' ' || cfgline[k]=='=' || cfgline[k]=='\t')) {
-								continue;
-							} else {
-								value[j] = cfgline[k];
-								j++;
-							}
-						}
-					}
+			if (!setcfgvalue(&cset[i], value, cfgline)) {
+				continue;
+			}
 
-					/* set value and get new line if valid value was found */
-					if (strlen(value)!=0) {
+			cset[i].found = 1;
+			break;
+		}
 
-						if (cset[i].namelen>0) {
-							strncpy_nt(cset[i].locc, value, cset[i].namelen);
-							cset[i].locc[cset[i].namelen-1]='\0';
-							if (debug)
-								printf("  c: %s   -> \"%s\": \"%s\"\n", cfgline, cset[i].name, cset[i].locc);
-						} else if (isdigit(value[0])) {
-							*cset[i].loci = atoi(value);
-							if (debug)
-								printf("  i: %s   -> \"%s\": %d\n", cfgline, cset[i].name, *cset[i].loci);
-						} else {
-							continue;
-						}
+		if ((debug) && (!cset[i].found) && (strncasecmp(cfgline, "MaxBW", 5)!=0))
+			printf("Unknown configuration line: %s", cfgline);
 
-						cset[i].found = 1;
-						break;
-					} else if (strlen(value)==0) {
-						if (debug)
-							printf("  c: %s   -> \"%s\" with no value, keeping default.\n", cfgline, cset[i].name);
-						cset[i].found = 1;
-						break;
-					}
-
-				} /* if */
-
-			} /* for */
-
-			if ((debug) && (!cset[i].found) && (strncasecmp(cfgline, "MaxBW", 5)!=0))
-				printf("Unknown configuration line: %s", cfgline);
-
-		} /* if */
-
-	} /* while */
-
-	/* search for interface specific limits */
-	ibwcfgread(fd);
+	}
 
 	fclose(fd);
-
-	if (debug)
-		ibwlist();
 
 	/* validate config */
 	validatecfg();
@@ -387,7 +309,7 @@ void validatecfg(void)
 		printe(PT_Config);
 	}
 
-	if (cfg.sampletime<0 || cfg.sampletime>600) {
+	if (cfg.sampletime<2 || cfg.sampletime>600) {
 		cfg.sampletime = DEFSAMPTIME;
 		snprintf(errorstring, 512, "Invalid value for Sampletime, resetting to \"%d\".", cfg.sampletime);
 		printe(PT_Config);
@@ -399,7 +321,7 @@ void validatecfg(void)
 		printe(PT_Config);
 	}
 
-	if (cfg.maxbw<0 || cfg.maxbw>10000) {
+	if (cfg.maxbw<0 || cfg.maxbw>BWMAX) {
 		cfg.maxbw = DEFMAXBW;
 		snprintf(errorstring, 512, "Invalid value for MaxBandwidth, resetting to \"%d\".", cfg.maxbw);
 		printe(PT_Config);
@@ -524,11 +446,23 @@ void validatecfg(void)
 		snprintf(errorstring, 512, "Invalid value for TrafficlessDays, resetting to \"%d\".", cfg.transbg);
 		printe(PT_Config);
 	}
+
+	if (cfg.bwdetection<0 || cfg.bwdetection>1) {
+		cfg.bwdetection = BWDETECT;
+		snprintf(errorstring, 512, "Invalid value for BandwidthDetection, resetting to \"%d\".", cfg.bwdetection);
+		printe(PT_Config);
+	}
+
+	if (cfg.bwdetectioninterval<0 || cfg.bwdetectioninterval>30) {
+		cfg.bwdetectioninterval = BWDETECTINTERVAL;
+		snprintf(errorstring, 512, "Invalid value for BandwidthDetectionInterval, resetting to \"%d\".", cfg.bwdetectioninterval);
+		printe(PT_Config);
+	}
 }
 
 void defaultcfg(void)
 {
-	ibwflush();
+	ifacebw = NULL;
 
 	cfg.bvar = BVAR;
 	cfg.qmode = DEFQMODE;
@@ -537,6 +471,8 @@ void defaultcfg(void)
 	cfg.unit = UNITMODE;
 	cfg.ostyle = OSTYLE;
 	cfg.rateunit = RATEUNIT;
+	cfg.bwdetection = BWDETECT;
+	cfg.bwdetectioninterval = BWDETECTINTERVAL;
 	cfg.maxbw = DEFMAXBW;
 	cfg.spacecheck = USESPACECHECK;
 	cfg.flock = USEFLOCK;
@@ -544,6 +480,7 @@ void defaultcfg(void)
 	cfg.summaryrate = SUMMARYRATE;
 	cfg.slayout = SUMMARYLAYOUT;
 	cfg.traflessday = TRAFLESSDAY;
+	cfg.utflocale = UTFLOCALE;
 	strncpy_nt(cfg.dbdir, DATABASEDIR, 512);
 	strncpy_nt(cfg.iface, DEFIFACE, 32);
 	strncpy_nt(cfg.locale, LOCALE, 32);
@@ -584,188 +521,127 @@ void defaultcfg(void)
 	strncpy_nt(cfg.ctxd, CTXD, 8);
 }
 
-int ibwadd(const char *iface, int limit)
+int opencfgfile(const char *cfgfile, FILE **fd)
 {
-	ibwnode *n, *p = ifacebw;
+	char buffer[512];
+	int i, tryhome;
 
-	/* add new node if list is empty */
-	if (p == NULL) {
+	/* clear buffer */
+	for (i=0; i<512; i++) {
+		buffer[i] = '\0';
+	}
 
-		n = malloc(sizeof(ibwnode));
+	/* possible config files: 1) --config   2) $HOME/.vnstatrc   3) /etc/vnstat.conf   4) none */
 
-		if (n == NULL) {
+	if (cfgfile[0]!='\0') {
+
+		/* try to open given file */
+		if ((*fd=fopen(cfgfile, "r"))!=NULL) {
+			if (debug)
+				printf("Config file: --config\n");
+		} else {
+			snprintf(errorstring, 512, "Unable to open given config file \"%s\": %s\n", cfgfile, strerror(errno));
+			printe(PT_Error);
 			return 0;
 		}
-
-		n->next = ifacebw;
-		ifacebw = n;
-		strncpy_nt(n->interface, iface, 32);
-		n->limit = limit;
 
 	} else {
 
-		/* update previous value if already in list */
-		while (p != NULL) {
-			if (strcmp(p->interface, iface)==0) {
-				p->limit = limit;
-				return 1;
+		if (getenv("HOME")) {
+			strncpy_nt(buffer, getenv("HOME"), 500);
+			strcat(buffer, "/.vnstatrc");
+			tryhome = 1;
+		} else {
+			tryhome = 0;
+		}
+
+		/* try to open first available config file */
+		if (tryhome && (*fd=fopen(buffer, "r"))!=NULL) {
+			if (debug)
+				printf("Config file: $HOME/.vnstatrc\n");
+		} else if ((*fd=fopen("/etc/vnstat.conf", "r"))!=NULL) {
+			if (debug)
+				printf("Config file: /etc/vnstat.conf\n");
+		} else if ((*fd=fopen("/usr/local/etc/vnstat.conf", "r"))!=NULL) {
+			if (debug)
+				printf("Config file: /usr/local/etc/vnstat.conf\n");
+		} else {
+			if (debug)
+				printf("Config file: none\n");
+			return 1;
+		}
+	}
+
+	return 2;
+}
+
+int extractcfgvalue(char *value, const char *cfgline, int cfglen) {
+
+	int i, j, linelen;
+
+	linelen = (int)strlen(cfgline);
+
+	for (i=0; i<512; i++) {
+		value[i]='\0';
+	}
+
+	i = 0;
+	for (j=cfglen; j<linelen; j++) {
+		if (cfgline[j]=='\n' || cfgline[j]=='\r') {
+			break;
+		} else if (cfgline[j]=='\"') {
+			if (i==0) {
+				continue;
+			} else {
+				break;
 			}
-			p = p->next;
+		} else {
+			if (i==0 && (cfgline[j]==' ' || cfgline[j]=='=' || cfgline[j]=='\t')) {
+				continue;
+			} else {
+				value[i] = cfgline[j];
+				i++;
+			}
 		}
+	}
 
-		/* add new node if not found */
-		n = malloc(sizeof(ibwnode));
+	return (int)strlen(value);
+}
 
-		if (n == NULL) {
-			return 0;
-		}
-
-		n->next = ifacebw;
-		ifacebw = n;
-		strncpy_nt(n->interface, iface, 32);
-		n->limit = limit;
+int setcfgvalue(struct cfgsetting *cset, const char *value, const char *cfgline)
+{
+	if (cset->namelen>0) {
+		strncpy_nt(cset->locc, value, cset->namelen);
+		cset->locc[cset->namelen-1]='\0';
+		if (debug)
+			printf("  c: %s   -> \"%s\": \"%s\"\n", cfgline, cset->name, cset->locc);
+	} else if (isdigit(value[0])) {
+		*cset->loci = strtol(value, (char **)NULL, 0);
+		if (debug)
+			printf("  i: %s   -> \"%s\": %d\n", cfgline, cset->name, *cset->loci);
+	} else {
+		return 0;
 	}
 
 	return 1;
 }
 
-void ibwlist(void)
+void configlocale(void)
 {
-	int i=1;
-	ibwnode *p = ifacebw;
-
-	if (p == NULL) {
-		printf("ibw list is empty.\n");
-		return;
-	}
-
-	printf("ibw:\n");
-	while (p != NULL) {
-		printf(" %2d: \"%s\" \"%d\"\n", i, p->interface, p->limit);
-		p = p->next;
-		i++;
-	}
-}
-
-int ibwget(const char *iface)
-{
-	ibwnode *p = ifacebw;
-
-	/* search for interface specific limit */
-	while (p != NULL) {
-		if (strcasecmp(p->interface, iface)==0) {
-			if (p->limit>0) {
-				return p->limit;
-			} else {
-				return -1;
-			}
-		}
-		p = p->next;
-	}
-
-	/* return default limit if specified */
-	if (cfg.maxbw>0) {
-		return cfg.maxbw;
+	if (cfg.locale[0]!='-' && strlen(cfg.locale)>0) {
+		setlocale(LC_ALL, cfg.locale);
 	} else {
-		return -1;
-	}
-}
-
-void ibwflush(void)
-{
-	ibwnode *f, *p = ifacebw;
-
-	while (p != NULL) {
-		f = p;
-		p = p->next;
-		free(f);
-	}
-
-	ifacebw = NULL;
-}
-
-int ibwcfgread(FILE *fd)
-{
-	char cfgline[512], name[512], value[512];
-	int i, j, linelen, count = 0, ivalue;
-
-	/* start from value search from first line */
-	rewind(fd);
-
-	/* cycle all lines */
-	while (!feof(fd)) {
-
-		cfgline[0] = '\0';
-
-		/* get current line */
-		if (fgets(cfgline, 512, fd)==NULL) {
-			break;
-		}
-
-		linelen = (int)strlen(cfgline);
-
-		if (linelen>8 && cfgline[0]!='#') {
-
-			if (strncasecmp(cfgline, "MaxBW", 5)==0) {
-
-				/* clear name and value buffers */
-				for (j=0; j<512; j++) {
-					name[j]=value[j]='\0';
-				}
-
-				/* get interface name */
-				j=0;
-				for (i=5; i<linelen; i++) {
-					if (cfgline[i]==' ' || cfgline[i]=='=' || cfgline[i]=='\t' || cfgline[i]=='\n' || cfgline[i]=='\r') {
-						break;
-					} else {
-						name[j]=cfgline[i];
-						j++;
-					}
-				}
-
-				/* get new line if no usable name was found */
-				if (strlen(name)==0) {
-					continue;
-				}
-
-				/* search value */
-				j=0;
-				for (i++; i<linelen; i++) {
-					if (cfgline[i]=='\n' || cfgline[i]=='\r') {
-						break;
-					} else if (cfgline[i]=='\"') {
-						if (j==0) {
-							continue;
-						} else {
-							break;
-						}
-					} else {
-						if (j==0 && (cfgline[i]==' ' || cfgline[i]=='=' || cfgline[i]=='\t')) {
-							continue;
-						} else {
-							value[j]=cfgline[i];
-							j++;
-						}
-					}
-				}
-
-				/* get new line if no usable value was found */
-				if ((strlen(value)==0) || (!isdigit(value[0])) ) {
-					continue;
-				}
-
-				/* add interface and limit to list if value is within limits */
-				ivalue = atoi(value);
-				if (ivalue<0 || ivalue>10000) {
-					snprintf(errorstring, 512, "Invalid value \"%d\" for MaxBW%s, ignoring parameter.", ivalue, name);
-					printe(PT_Config);
-				} else {
-					ibwadd(name, ivalue);
-				}
-			}
+		if (getenv("LC_ALL")) {
+			setlocale(LC_ALL, getenv("LC_ALL"));
+		} else {
+			setlocale(LC_ALL, "");
 		}
 	}
-
-	return count;
+	if (getenv("LC_ALL")) {
+		if (strstr(getenv("LC_ALL"), "UTF") != NULL) {
+			cfg.utflocale = 1;
+		} else {
+			cfg.utflocale = 0;
+		}
+	}
 }

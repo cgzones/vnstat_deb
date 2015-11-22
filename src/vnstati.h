@@ -1,24 +1,20 @@
 #ifndef VNSTATI_H
 #define VNSTATI_H
 
-#include <sys/stat.h>  /* fstat() */
-#include <gd.h>        /* libgd2-dev libgd2 */
-#include <gdfontt.h>   /* gdFontGetTiny() */
-#include <gdfonts.h>   /* gdFontGetSmall() */
-#include <gdfontmb.h>  /* gdFontGetMediumBold() */
-#include <gdfontl.h>   /* gdFontGetLarge() */
-#include <gdfontg.h>   /* gdFontGetGiant() */
+#include "image.h"
 
-#define YBEGINOFFSET -1
-#define YENDOFFSET 6
+typedef struct {
+	int cache, help;
+	char interface[32], dirname[512], filename[512], cfgfile[512];
+	FILE *pngout;
+} IPARAMS;
 
-#define DOUTRAD 49
-#define DINRAD 15 
-
-/* global variables for vnstati */
-gdImagePtr im;
-int cbackground, cedge, cheader, cheadertitle, cheaderdate, ctext, cline, clinel, cvnstat;
-int crx, crxd, ctx, ctxd, cbgoffset;
-time_t current;
+void initiparams(IPARAMS *p);
+void showihelp(IPARAMS *p);
+void validateinput(IPARAMS *p);
+void handlecaching(IPARAMS *p, IMAGECONTENT *ic);
+void handledatabase(IPARAMS *p);
+void openoutput(IPARAMS *p);
+void writeoutput(IPARAMS *p, IMAGECONTENT *ic);
 
 #endif

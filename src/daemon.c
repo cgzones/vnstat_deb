@@ -4,6 +4,7 @@
 #include "dbcache.h"
 #include "misc.h"
 #include "cfg.h"
+#include "ibw.h"
 #include "daemon.h"
 
 void daemonize(void)
@@ -114,7 +115,7 @@ int addinterfaces(const char *dirname)
 	int index = 0, count = 0, bwlimit = 0;
 
 	/* get list of currently visible interfaces */
-	if (getiflist(&ifacelist)==0) {
+	if (getiflist(&ifacelist, 0)==0) {
 		free(ifacelist);
 		return 0;
 	}
@@ -636,7 +637,7 @@ int datalist_timevalidation(DSTATE *s)
 	/* skip update if previous update is less than a day in the future */
 	/* otherwise exit with error message since the clock is problably messed */
 	if (data.lastupdated > (s->current+86400)) {
-		snprintf(errorstring, 512, "Interface \"%s\" has previous update date too much in the future, exiting. (%d / %d)", data.interface, (unsigned int)data.lastupdated, (unsigned int)s->current);
+		snprintf(errorstring, 512, "Interface \"%s\" has previous update date too much in the future, exiting. (%u / %u)", data.interface, (unsigned int)data.lastupdated, (unsigned int)s->current);
 		printe(PT_Error);
 
 		/* clean daemon stuff before exit */
@@ -700,6 +701,7 @@ void handleintsignals(DSTATE *s)
 			if (loadcfg(s->cfgfile)) {
 				strncpy_nt(s->dirname, cfg.dbdir, 512);
 			}
+			ibwloadcfg(s->cfgfile);
 			break;
 
 		case SIGINT:
