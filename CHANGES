@@ -1,3 +1,19 @@
+1.15 / 22-Dec-2015
+
+ - Fix: XML output had extra commas, broken since previous version
+ - Fix: unintended shared pointer modification in mosecs() sometimes resulted
+   in wrong month name to be shown for the current month
+ - Fix: possible buffer overflow in /proc/net/dev parsing, requires corrupted
+   content in /proc/net/dev or use of address sanitizer (found by Hanno Böck)
+ - Use ANSI escape codes in -l and -tr modes for cursor location manipulation
+   instead of printing backspaces, hide cursor while output is active
+ - Improve database import robustness
+ - Improve support for Asian UTF-8 date strings
+ - Replace hand written Makefiles with Autotools
+ - Add --alwaysadd parameter to daemon for allowing automatic addition of
+   interfaces even if the database directory was populated during startup
+
+
 1.14 / 26-Apr-2015
 
  - Fix: JSON output syntax during first day of newly created databases
