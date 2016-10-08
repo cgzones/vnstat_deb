@@ -10,7 +10,7 @@ Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/vnstat.git
 
 Package: vnstat
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser, lsb-base
 Suggests: vnstati
 Description: console-based network traffic monitor
  vnStat is a network traffic monitor for Linux. It keeps a log of

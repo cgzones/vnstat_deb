@@ -4,6 +4,7 @@ vnstat (1.15-1) UNRELEASED; urgency=medium
   * Drop patches that are not needed anymore:
     - debian_build_system.diff
     - link_subunit.diff
+  * Add missing dependency on lsb-release.
 
  -- Felix Geyer <fgeyer@debian.org>  Sat, 08 Oct 2016 16:38:00 +0200
 
