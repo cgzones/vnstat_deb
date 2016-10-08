@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -22,6 +23,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <libgen.h>
+#include <fcntl.h>
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__) || defined(__FreeBSD_kernel__)
 #include <sys/param.h>
@@ -152,9 +154,6 @@ and most can be changed later from the config file.
 /* database version */
 /* 1 = 1.0, 2 = 1.1-1.2, 3 = 1.3- */
 #define DBVERSION 3
-
-/* version string */
-#define VNSTATVERSION "1.14"
 
 /* xml format version */
 /* 1 = 1.7- */
@@ -304,6 +303,7 @@ uint64_t mbkbtokb(uint64_t mb, uint64_t kb);
 char *strncpy_nt(char *dest, const char *src, size_t n);
 int isnumeric(const char *s);
 void panicexit(const char *sourcefile, const int sourceline);
+char *getversion(void);
 
 /* global variables */
 DATA data;

@@ -1,5 +1,9 @@
+#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) && !defined(__APPLE__) && !defined(__FreeBSD_kernel__)
+#define _XOPEN_SOURCE 600
+#endif
 #include "common.h"
 #include "misc.h"
+#include <wchar.h>
 
 int kerneltest(void)
 {
@@ -395,8 +399,32 @@ char *getratestring(float rate, int len, int declen, int unit)
 
 int getpadding(int len, char *str)
 {
+	wchar_t wbuffer[64];
 	if (!cfg.utflocale) {
 		return len;
 	}
-	return len + ((int)strlen(str) - (int)mbstowcs(NULL, str, 0));
+	if ((int)mbstowcs(wbuffer, str, 64) < 0) {
+		return len;
+	}
+	return len + ((int)strlen(str) - wcswidth(wbuffer, 64));
+}
+
+void cursortocolumn(int column)
+{
+	printf("\033[%dG", column);
+}
+
+void cursorhide(void)
+{
+	printf("\033[?25l");
+}
+
+void cursorshow(void)
+{
+	printf("\033[?25h");
+}
+
+void eraseline(void)
+{
+	printf("\033[2K");
 }
