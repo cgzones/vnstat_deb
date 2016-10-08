@@ -1,6 +1,9 @@
 vnstat (1.15-1) UNRELEASED; urgency=medium
 
   * New upstream release.
+  * Drop patches that are not needed anymore:
+    - debian_build_system.diff
+    - link_subunit.diff
 
  -- Felix Geyer <fgeyer@debian.org>  Sat, 08 Oct 2016 16:38:00 +0200
 

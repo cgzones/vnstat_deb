@@ -1,4 +1,2 @@
-debian_build_system.diff
 pidfile_path.diff
 systemd_user.diff
-link_subunit.diff
