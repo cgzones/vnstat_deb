@@ -5,8 +5,8 @@ Maintainer: Felix Geyer <fgeyer@debian.org>
 Build-Depends: debhelper (>= 9), libgd-dev, check, dh-systemd (>= 1.4)
 Standards-Version: 3.9.5
 Homepage: http://humdi.net/vnstat/
-Vcs-Git: git://anonscm.debian.org/collab-maint/vnstat.git
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/vnstat.git
+Vcs-Git: https://anonscm.debian.org/git/collab-maint/vnstat.git
+Vcs-Browser: https://anonscm.debian.org/git/collab-maint/vnstat.git
 
 Package: vnstat
 Architecture: any
