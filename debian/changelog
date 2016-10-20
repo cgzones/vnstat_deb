@@ -1,4 +1,4 @@
-vnstat (1.15-1) UNRELEASED; urgency=medium
+vnstat (1.15-1) unstable; urgency=medium
 
   * New upstream release.
   * Drop patches that are not needed anymore:
@@ -6,7 +6,7 @@ vnstat (1.15-1) UNRELEASED; urgency=medium
     - link_subunit.diff
   * Add missing dependency on lsb-release.
 
- -- Felix Geyer <fgeyer@debian.org>  Sat, 08 Oct 2016 16:38:00 +0200
+ -- Felix Geyer <fgeyer@debian.org>  Thu, 20 Oct 2016 21:08:28 +0200
 
 vnstat (1.14-1) unstable; urgency=medium
 
