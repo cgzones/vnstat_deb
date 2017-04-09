@@ -1,2 +1,3 @@
 pidfile_path.diff
 systemd_user.diff
+install-ordering.diff

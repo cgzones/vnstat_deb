@@ -1,3 +1,10 @@
+vnstat (1.15-2) unstable; urgency=medium
+
+  * Fix Makefile install-data-hook dependency. (Closes: #859712)
+    - Add install-ordering.diff, thanks to Adrian Bunk.
+
+ -- Felix Geyer <fgeyer@debian.org>  Sun, 09 Apr 2017 18:27:14 +0200
+
 vnstat (1.15-1) unstable; urgency=medium
 
   * New upstream release.
