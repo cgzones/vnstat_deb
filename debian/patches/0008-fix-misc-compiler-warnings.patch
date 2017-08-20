@@ -1,0 +1,328 @@
+From: =?utf-8?q?Christian_G=C3=B6ttsche?= <cgzones@googlemail.com>
+Date: Sun, 20 Aug 2017 12:39:03 +0200
+Subject: fix misc compiler warnings
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+src/vnstat.h:7:33: warning: identifier ‘delete’ conflicts with C++ keyword [-Wc++-compat]
+
+src/ifinfo.c:61:13: warning: request for implicit conversion from ‘void *’ to ‘char *’ not permitted in C++ [-Wc++-compat]
+
+src/dbxml.c:110:16: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+
+src/dbjson.c:134:16: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+
+src/common.c:270:6: warning: function might be candidate for attribute ‘noreturn’ [-Wsuggest-attribute=noreturn]
+
+src/misc.c:309:32: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+
+src/ibw.c:34:5: warning: request for implicit conversion from ‘void *’ to ‘ibwnode * {aka struct ibwnode *}’ not permitted in C++ [-Wc++-compat]
+
+src/image.c:68:17: warning: passing argument 1 of ‘colorinitcheck’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+
+src/dbcache.c:26:4: warning: request for implicit conversion from ‘void *’ to ‘datanode * {aka struct datanode *}’ not permitted in C++ [-Wc++-compat]
+
+src/ifinfo.c:358:4: warning: unsuffixed float constant [-Wunsuffixed-float-constants]
+
+src/common.c:173:14: warning: nested extern declaration of ‘timezone’ [-Wnested-externs]
+src/common.c:173:14: warning: redundant redeclaration of ‘timezone’ [-Wredundant-decls]
+---
+ src/common.c  |  3 ++-
+ src/common.h  |  2 +-
+ src/dbcache.c |  4 ++--
+ src/dbjson.c  |  6 +++---
+ src/dbxml.c   |  6 +++---
+ src/ibw.c     |  4 ++--
+ src/ifinfo.c  | 12 ++++++------
+ src/image.c   |  2 +-
+ src/image.h   |  2 +-
+ src/misc.c    |  8 ++++----
+ src/misc.h    |  4 ++--
+ src/vnstat.c  |  6 +++---
+ src/vnstat.h  |  2 +-
+ 13 files changed, 31 insertions(+), 30 deletions(-)
+
+diff --git a/src/common.c b/src/common.c
+index 914a1da..1a3cb94 100644
+--- a/src/common.c
++++ b/src/common.c
+@@ -170,7 +170,7 @@ uint32_t mosecs(void)
+ {
+ 	struct tm d;
+ #if defined(_SVID_SOURCE) || defined(_XOPEN_SOURCE) || defined(__linux__)
+-	extern long timezone;
++	/* extern long timezone; */
+ #else
+ 	int timezone = 0;
+ #endif
+@@ -267,6 +267,7 @@ int isnumeric(const char *s)
+ 	return 1;
+ }
+ 
++__attribute__((noreturn))
+ void panicexit(const char *sourcefile, const int sourceline)
+ {
+ 	snprintf(errorstring, 512, "Unexpected error (%s), exiting. (%s:%d)\n", strerror(errno), sourcefile, sourceline);
+diff --git a/src/common.h b/src/common.h
+index fbaf4ad..70f9d94 100644
+--- a/src/common.h
++++ b/src/common.h
+@@ -307,7 +307,7 @@ void addtraffic(uint64_t *destmb, int *destkb, const uint64_t srcmb, const int s
+ uint64_t mbkbtokb(uint64_t mb, uint64_t kb);
+ char *strncpy_nt(char *dest, const char *src, size_t n);
+ int isnumeric(const char *s);
+-void panicexit(const char *sourcefile, const int sourceline);
++void panicexit(const char *sourcefile, const int sourceline) __attribute__((noreturn));
+ char *getversion(void);
+ 
+ /* global variables */
+diff --git a/src/dbcache.c b/src/dbcache.c
+index a4329d6..6b85259 100644
+--- a/src/dbcache.c
++++ b/src/dbcache.c
+@@ -23,7 +23,7 @@ int cacheadd(const char *iface, int sync)
+ 	}
+ 
+ 	/* add new node if not in list */
+-	n = malloc(sizeof(datanode));
++	n = (datanode *)  malloc(sizeof(datanode));
+ 
+ 	if (n == NULL) {
+ 		return 0;
+@@ -109,7 +109,7 @@ int cacheupdate(void)
+ 	}
+ 
+ 	/* add new node if not in list */
+-	n = malloc(sizeof(datanode));
++	n = (datanode *) malloc(sizeof(datanode));
+ 
+ 	if (n == NULL) {
+ 		return 0;
+diff --git a/src/dbjson.c b/src/dbjson.c
+index 2d4a5c1..c6eb948 100644
+--- a/src/dbjson.c
++++ b/src/dbjson.c
+@@ -131,9 +131,9 @@ void jsonhours(void)
+ void jsondate(time_t *date, int type)
+ {
+ 	struct tm *d;
+-	char *type1 = "\"date\":{\"year\":%d,\"month\":%d,\"day\":%d}";
+-	char *type2 = "\"date\":{\"year\":%d,\"month\":%d,\"day\":%d},\"time\":{\"hour\":%d,\"minutes\":%d}";
+-	char *type3 = "\"date\":{\"year\":%d,\"month\":%d}";
++	const char *type1 = "\"date\":{\"year\":%d,\"month\":%d,\"day\":%d}";
++	const char *type2 = "\"date\":{\"year\":%d,\"month\":%d,\"day\":%d},\"time\":{\"hour\":%d,\"minutes\":%d}";
++	const char *type3 = "\"date\":{\"year\":%d,\"month\":%d}";
+ 
+ 	d = localtime(date);
+ 
+diff --git a/src/dbxml.c b/src/dbxml.c
+index b3eddf7..674080a 100644
+--- a/src/dbxml.c
++++ b/src/dbxml.c
+@@ -107,9 +107,9 @@ void xmlhours(void)
+ void xmldate(time_t *date, int type)
+ {
+ 	struct tm *d;
+-	char *type1 = "<date><year>%d</year><month>%02d</month><day>%02d</day></date>";
+-	char *type2 = "<date><year>%d</year><month>%02d</month><day>%02d</day></date><time><hour>%02d</hour><minute>%02d</minute></time>";
+-	char *type3 = "<date><year>%d</year><month>%02d</month></date>";
++	const char *type1 = "<date><year>%d</year><month>%02d</month><day>%02d</day></date>";
++	const char *type2 = "<date><year>%d</year><month>%02d</month><day>%02d</day></date><time><hour>%02d</hour><minute>%02d</minute></time>";
++	const char *type3 = "<date><year>%d</year><month>%02d</month></date>";
+ 
+ 	d = localtime(date);
+ 
+diff --git a/src/ibw.c b/src/ibw.c
+index 5510d30..4741b2b 100644
+--- a/src/ibw.c
++++ b/src/ibw.c
+@@ -31,7 +31,7 @@ int ibwadd(const char *iface, const uint32_t limit)
+ 	/* add new node if list is empty */
+ 	if (p == NULL) {
+ 
+-		n = malloc(sizeof(ibwnode));
++		n = (ibwnode *) malloc(sizeof(ibwnode));
+ 
+ 		if (n == NULL) {
+ 			return 0;
+@@ -57,7 +57,7 @@ int ibwadd(const char *iface, const uint32_t limit)
+ 		}
+ 
+ 		/* add new node if not found */
+-		n = malloc(sizeof(ibwnode));
++		n =  (ibwnode *) malloc(sizeof(ibwnode));
+ 
+ 		if (n == NULL) {
+ 			return 0;
+diff --git a/src/ifinfo.c b/src/ifinfo.c
+index 6a5d25d..0356308 100644
+--- a/src/ifinfo.c
++++ b/src/ifinfo.c
+@@ -58,7 +58,7 @@ int getiflist(char **ifacelist, int showspeed)
+ #endif
+ 
+ 	/* initialize list */
+-	*ifacelist = malloc(sizeof(char));
++	*ifacelist = (char *) malloc(sizeof(char));
+ 	if (*ifacelist == NULL) {
+ 		panicexit(__FILE__, __LINE__);
+ 	}
+@@ -72,7 +72,7 @@ int getiflist(char **ifacelist, int showspeed)
+ 			sscanf(procline, "%63s", temp);
+ 			if (strlen(temp)>0 && (isdigit(temp[(strlen(temp)-1)]) || temp[(strlen(temp)-1)]==':')) {
+ 				sscanf(temp, "%31[^':']s", interface);
+-				*ifacelist = realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(interface) + 2 ) * sizeof(char)) );
++				*ifacelist = (char *) realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(interface) + 2 ) * sizeof(char)) );
+ 				if (*ifacelist == NULL) {
+ 					panicexit(__FILE__, __LINE__);
+ 				}
+@@ -84,7 +84,7 @@ int getiflist(char **ifacelist, int showspeed)
+ 				speed = getifspeed(interface);
+ 				if (speed > 0) {
+ 					snprintf(temp, 64, "(%u Mbit) ", speed);
+-					*ifacelist = realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(temp) + 1 ) * sizeof(char)) );
++					*ifacelist = (char *) realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(temp) + 1 ) * sizeof(char)) );
+ 					if (*ifacelist == NULL) {
+ 						panicexit(__FILE__, __LINE__);
+ 					}
+@@ -105,7 +105,7 @@ int getiflist(char **ifacelist, int showspeed)
+ 				if (di->d_name[0] == '.' || strlen(di->d_name) > 31) {
+ 					continue;
+ 				}
+-				*ifacelist = realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(di->d_name) + 2 ) * sizeof(char)) );
++				*ifacelist = (char *) realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(di->d_name) + 2 ) * sizeof(char)) );
+ 				if (*ifacelist == NULL) {
+ 					panicexit(__FILE__, __LINE__);
+ 				}
+@@ -117,7 +117,7 @@ int getiflist(char **ifacelist, int showspeed)
+ 				speed = getifspeed(di->d_name);
+ 				if (speed > 0) {
+ 					snprintf(temp, 64, "(%u Mbit) ", speed);
+-					*ifacelist = realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(temp) + 1 ) * sizeof(char)) );
++					*ifacelist = (char *) realloc(*ifacelist, ( ( strlen(*ifacelist) + strlen(temp) + 1 ) * sizeof(char)) );
+ 					if (*ifacelist == NULL) {
+ 						panicexit(__FILE__, __LINE__);
+ 					}
+@@ -355,7 +355,7 @@ void parseifinfo(int newdb)
+ 
+ 			/* calculate maximum possible transfer since last update based on set maximum rate */
+ 			/* and add 10% in order to be on the safe side */
+-			maxtransfer = ceil((maxbw/(float)8)*interval*(float)1.1);
++			maxtransfer = ceilf((maxbw/8.0f)*interval*1.1f);
+ 
+ 			if (debug)
+ 				printf("interval: %"PRIu64"  maxbw: %"PRIu32"  maxrate: %"PRIu64"  rxc: %"PRIu64"  txc: %"PRIu64"\n", (uint64_t)interval, maxbw, maxtransfer, rxchange, txchange);
+diff --git a/src/image.c b/src/image.c
+index 3cfddca..6f9038d 100644
+--- a/src/image.c
++++ b/src/image.c
+@@ -128,7 +128,7 @@ void colorinit(IMAGECONTENT *ic)
+ 	colorinitcheck("ctxd", ic->ctxd, cfg.ctxd, rgb);
+ }
+ 
+-void colorinitcheck(char *color, int value, char *cfgtext, int *rgb)
++void colorinitcheck(const char *color, int value, const char *cfgtext, const int *rgb)
+ {
+ 	if (value==-1) {
+ 		printf("Error: ImageColorAllocate failed.\n");
+diff --git a/src/image.h b/src/image.h
+index e918838..552808d 100644
+--- a/src/image.h
++++ b/src/image.h
+@@ -27,7 +27,7 @@ typedef struct {
+ void initimagecontent(IMAGECONTENT *ic);
+ void drawimage(IMAGECONTENT *ic);
+ void colorinit(IMAGECONTENT *ic);
+-void colorinitcheck(char *color, int value, char *cfgtext, int *rgb);
++void colorinitcheck(const char *color, int value, const char *cfgtext, const int *rgb);
+ void layoutinit(IMAGECONTENT *ic, char *title, int width, int height);
+ void drawlegend(IMAGECONTENT *ic, int x, int y);
+ void drawbar(IMAGECONTENT *ic, int x, int y, int len, uint64_t rx, int rxk, uint64_t tx, int txk, uint64_t max);
+diff --git a/src/misc.c b/src/misc.c
+index 9842448..cfc7295 100644
+--- a/src/misc.c
++++ b/src/misc.c
+@@ -304,9 +304,9 @@ uint64_t getscale(uint64_t kb)
+ 	return result;
+ }
+ 
+-char *getunitprefix(int index)
++const char *getunitprefix(int index)
+ {
+-	static char *unitprefix[] = { "na", "KiB", "MiB", "GiB", "TiB",
++	static const char *unitprefix[] = { "na", "KiB", "MiB", "GiB", "TiB",
+                                    "KB",  "MB",  "GB",  "TB" };
+ 
+ 	if (index>UNITPREFIXCOUNT) {
+@@ -316,9 +316,9 @@ char *getunitprefix(int index)
+ 	}
+ }
+ 
+-char *getrateunitprefix(int unitmode, int index)
++const char *getrateunitprefix(int unitmode, int index)
+ {
+-	static char *rateunitprefix[] = { "na", "KiB/s", "MiB/s", "GiB/s", "TiB/s",
++	static const char *rateunitprefix[] = { "na", "KiB/s", "MiB/s", "GiB/s", "TiB/s",
+                                     "KB/s",  "MB/s",  "GB/s",  "TB/s",
+                                     "Kibit/s",  "Mibit/s",  "Gibit/s",  "Tibit/s",
+                                     "kbit/s",  "Mbit/s",  "Gbit/s",  "Tbit/s" };
+diff --git a/src/misc.h b/src/misc.h
+index 9910e11..75d29d6 100644
+--- a/src/misc.h
++++ b/src/misc.h
+@@ -11,8 +11,8 @@ char *getvalue(uint64_t mb, uint64_t kb, int len, int type);
+ char *getrate(uint64_t mb, uint64_t kb, uint32_t interval, int len);
+ char *gettrafficrate(uint64_t bytes, uint32_t interval, int len);
+ uint64_t getscale(uint64_t kb);
+-char *getunitprefix(int index);
+-char *getrateunitprefix(int unitmode, int index);
++const char *getunitprefix(int index);
++const char *getrateunitprefix(int unitmode, int index);
+ uint64_t getunitdivisor(int unitmode, int index);
+ char *getratestring(uint64_t rate, int len, int declen, int unitmode);
+ int getpadding(int len, char *str);
+diff --git a/src/vnstat.c b/src/vnstat.c
+index 43880ac..3a2139e 100644
+--- a/src/vnstat.c
++++ b/src/vnstat.c
+@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
+ 			printcfgfile();
+ 			return 0;
+ 		} else if (strcmp(argv[currentarg],"--delete")==0) {
+-			p.delete=1;
++			p.del=1;
+ 			p.query=0;
+ 		} else if (strcmp(argv[currentarg],"--iflist")==0) {
+ 			getiflist(&p.ifacelist, 1);
+@@ -421,7 +421,7 @@ void initparams(PARAMS *p)
+ 	p->traffic = 0;
+ 	p->livetraffic = 0;
+ 	p->defaultiface = 1;
+-	p->delete=0;
++	p->del=0;
+ 	p->livemode = 0;
+ 	p->ifacelist = NULL;
+ 	p->cfgfile[0] = '\0';
+@@ -612,7 +612,7 @@ void handlecountersync(PARAMS *p)
+ 
+ void handledelete(PARAMS *p)
+ {
+-	if (!p->delete) {
++	if (!p->del) {
+ 		return;
+ 	}
+ 
+diff --git a/src/vnstat.h b/src/vnstat.h
+index 181e03c..7c8148d 100644
+--- a/src/vnstat.h
++++ b/src/vnstat.h
+@@ -4,7 +4,7 @@
+ typedef struct {
+ 	int update, query, newdb, reset, sync, merged, savemerged, import;
+ 	int create, active, files, force, cleartop, rebuildtotal, traffic;
+-	int livetraffic, defaultiface, delete, livemode;
++	int livetraffic, defaultiface, del, livemode;
+ 	char interface[32], dirname[512], nick[32], filename[512];
+ 	char definterface[32], cfgfile[512], *ifacelist, jsonmode, xmlmode;
+ } PARAMS;

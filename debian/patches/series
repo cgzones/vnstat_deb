@@ -5,3 +5,4 @@ systemd_user.diff
 0005-fix-printf-argument.patch
 0006-fix-clang-tidy-issues.patch
 0007-fix-compile-warnings.patch
+0008-fix-misc-compiler-warnings.patch
