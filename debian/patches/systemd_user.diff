@@ -1,6 +1,13 @@
-Description: Run vnstatd as user vnstat.
-Author: Felix Geyer <fgeyer@debian.org>
+From: Felix Geyer <fgeyer@debian.org>
+Date: Sun, 20 Aug 2017 11:18:29 +0200
+Subject: Run vnstatd as user vnstat
 
+---
+ examples/systemd/vnstat.service | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/examples/systemd/vnstat.service b/examples/systemd/vnstat.service
+index 1d898f5..057fa56 100644
 --- a/examples/systemd/vnstat.service
 +++ b/examples/systemd/vnstat.service
 @@ -6,6 +6,7 @@ After=network.target

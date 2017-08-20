@@ -1,3 +1,59 @@
+vnstat (1.17-1+nmu1) UNRELEASED; urgency=medium
+
+  * Non-maintainer upload
+
+  * New upstream version 1.17
+    1.17 / 16-Feb-2017
+
+     - Fix: --importdb was creating invalid databases since version 1.15
+     - Fix: console output was being buffered which resulted in lack of output
+       in at least systemd log
+     - Add cross-compilation detection and improve install-data-hook to not
+       assume that the binaries can be executed in the host system
+
+    1.16 / 24-Dec-2016
+
+     - Fix: traffic rate calculation, SI decimal prefixes were shown but
+       calculation was done for IEC binary prefixes
+     - Add option for configure to disable image output support even if required
+       library is available, improve library detection
+       (pull request by Rodrigo Rebello)
+     - Add selection between SI decimal prefixes (kbit/s...) (default) and
+       IEC binary prefixes (Kibit/s...) for traffic rate using RateUnitMode
+       keyword in configuration file
+     - Improve database handling resilience
+     - Inherit database file ownership from database directory if
+       UpdateFileOwner configuration option is enabled
+       (default: enabled) when adding new interfaces for monitoring as root.
+       This solves database file ownership mismatches when the daemon is
+       started as a non-root user and an interface gets added for monitoring
+        with a sudo command as root
+     - Improve user guidance in error situations related to the configured
+       default interface
+
+  * debian/
+    - compat: Switch to compat level 10
+    - control
+      + Bump Standards-Version to 4.0.0, no changes needed.
+      + Update Build-Depends
+    - copyright: format according to
+      https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+    - gbp.conf: Add configuration
+    - patches/
+      + Rebase
+      + Drop install-ordering, applied upstream
+      + Add spelling patch, based on lintian findings
+      + Cherrp-pick upstream commits:
+        fix compile warnings
+        fix clang-tidy issues
+        fix printf argument
+    - rules
+      + Update for compat level 10
+      + Enable hardening
+    - vnstat.service: Use proper hook for systemd service
+
+ -- Christian Göttsche <cgzones@googlemail.com>  Sun, 20 Aug 2017 10:59:26 +0200
+
 vnstat (1.15-2) unstable; urgency=medium
 
   * Fix Makefile install-data-hook dependency. (Closes: #859712)

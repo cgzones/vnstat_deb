@@ -1,10 +1,12 @@
 #!/usr/bin/make -f
 
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
 %:
-	dh $@ --parallel --with systemd,autoreconf
+	dh $@
 
 override_dh_auto_build:
 	dh_auto_build -- all
 
-override_dh_install:
-	dh_install --fail-missing
+override_dh_missing:
+	dh_missing --fail-missing

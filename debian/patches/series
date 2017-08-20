@@ -1,3 +1,7 @@
 pidfile_path.diff
 systemd_user.diff
-install-ordering.diff
+0003-spelling-fixes.patch
+0004-Makefile.am-install-data-hook-depends-on-install-exe.patch
+0005-fix-printf-argument.patch
+0006-fix-clang-tidy-issues.patch
+0007-fix-compile-warnings.patch
