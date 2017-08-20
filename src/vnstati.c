@@ -1,5 +1,5 @@
 /*
-vnStat image output - Copyright (c) 2007-2015 Teemu Toivola <tst@iki.fi>
+vnStat image output - Copyright (c) 2007-2016 Teemu Toivola <tst@iki.fi>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -10,9 +10,9 @@ vnStat image output - Copyright (c) 2007-2015 Teemu Toivola <tst@iki.fi>
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program;  if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave., Cambridge, MA 02139, USA.
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 #include "common.h"
@@ -246,8 +246,9 @@ int main(int argc, char *argv[])
 
 void initiparams(IPARAMS *p)
 {
-	noexit = 0;		/* allow functions to exit in case of error */
-	debug = 0;		/* debug disabled by default */
+	noexit = 0;        /* allow functions to exit in case of error */
+	debug = 0;         /* debug disabled by default */
+	disableprints = 0; /* let prints be visible */
 	p->interface[0] = '\0';
 	p->dirname[0] = '\0';
 	p->filename[0] = '\0';
@@ -325,7 +326,7 @@ void handledatabase(IPARAMS *p)
 			exit(EXIT_FAILURE);
 		}
 	} else {
-		if (readdb(p->interface, p->dirname)==1) {
+		if (readdb(p->interface, p->dirname, 0)==1) {
 			exit(EXIT_FAILURE);
 		}
 	}

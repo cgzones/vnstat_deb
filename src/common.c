@@ -4,8 +4,11 @@ int printe(PrintType type)
 {
 	int result = 1;
 
+	if (disableprints) {
+		return 1;
+
 	/* daemon running but log not enabled */
-	if (noexit==2 && cfg.uselogging==0) {
+	} else if (noexit==2 && cfg.uselogging==0) {
 		return 1;
 
 	/* daemon running, log enabled */
@@ -41,7 +44,7 @@ int printe(PrintType type)
 				printf("%d: %s\n", type, errorstring);
 				break;
 		}
-
+		fflush(stdout);
 	}
 
 	return result;
@@ -129,6 +132,20 @@ int logprint(PrintType type)
 	return 0;
 }
 
+int verifylogaccess(void)
+{
+	FILE *logfile;
+
+	/* only logfile logging can be verified */
+	if (cfg.uselogging==1) {
+		if ((logfile = fopen(cfg.logfile, "a")) == NULL) {
+			return 0;
+		}
+		fclose(logfile);
+	}
+	return 1;
+}
+
 int dmonth(int month)
 {
 	static int dmon[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -159,11 +176,11 @@ uint32_t mosecs(void)
 #endif
 
 	if (localtime_r(&data.month[0].month, &d) == NULL) {
-		return 0;
+		return 1;
 	}
 
 	if (d.tm_mday < cfg.monthrotate) {
-		return 0;
+		return 1;
 	}
 
 	d.tm_mday = cfg.monthrotate;
@@ -172,7 +189,7 @@ uint32_t mosecs(void)
 	if ((data.lastupdated-data.month[0].month)>0) {
 		return data.lastupdated-mktime(&d)+timezone;
 	} else {
-		return 0;
+		return 1;
 	}
 }
 
@@ -214,6 +231,9 @@ void addtraffic(uint64_t *destmb, int *destkb, const uint64_t srcmb, const int s
 
 uint64_t mbkbtokb(uint64_t mb, uint64_t kb)
 {
+	if (mb==0) {
+		return kb;
+	}
 	if (kb>=1024) {
 		mb+=kb/1024;
 		kb-=(kb/1024)*1024;

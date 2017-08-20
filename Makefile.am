@@ -2,7 +2,7 @@ SUBDIRS = .
 
 dist_man_MANS = man/vnstat.1 man/vnstat.conf.5 man/vnstatd.1 man/vnstati.1
 
-EXTRA_DIST = cfg examples UPGRADE CHANGES FAQ INSTALL_BSD INSTALL_OSX
+EXTRA_DIST = cfg examples UPGRADE CHANGES FAQ INSTALL_BSD INSTALL_OSX UNINSTALL
 
 bin_PROGRAMS = vnstat
 sbin_PROGRAMS = vnstatd
@@ -22,6 +22,8 @@ vnstat_SOURCES = src/vnstat.c src/vnstat.h \
   src/misc.c src/misc.h \
   src/cfg.c src/cfg.h \
   src/ibw.c src/ibw.h \
+  src/fs.c src/fs.h \
+  src/id.c src/id.h \
   src/traffic.c src/traffic.h
 
 vnstatd_SOURCES = src/vnstatd.c src/vnstatd.h \
@@ -32,6 +34,8 @@ vnstatd_SOURCES = src/vnstatd.c src/vnstatd.h \
   src/misc.c src/misc.h \
   src/cfg.c src/cfg.h \
   src/ibw.c src/ibw.h \
+  src/fs.c src/fs.h \
+  src/id.c src/id.h \
   src/daemon.c src/daemon.h
 
 vnstati_SOURCES = src/vnstati.c src/vnstati.h \
@@ -40,6 +44,8 @@ vnstati_SOURCES = src/vnstati.c src/vnstati.h \
   src/dbmerge.c src/dbmerge.h \
   src/common.c src/common.h \
   src/misc.c src/misc.h \
+  src/fs.c src/fs.h \
+  src/id.c src/id.h \
   src/cfg.c src/cfg.h
 
 if HAVE_CHECK
@@ -58,6 +64,8 @@ check_vnstat_SOURCES = tests/vnstat_tests.c tests/vnstat_tests.h \
   tests/config_tests.c tests/config_tests.h \
   tests/ifinfo_tests.c tests/ifinfo_tests.h \
   tests/misc_tests.c tests/misc_tests.h \
+  tests/fs_tests.c tests/fs_tests.h \
+  tests/id_tests.c tests/id_tests.h \
   tests/daemon_tests.c tests/daemon_tests.h
 
 check_vnstat_SOURCES += src/cfg.c src/cfg.h \
@@ -72,6 +80,8 @@ check_vnstat_SOURCES += src/cfg.c src/cfg.h \
   src/ibw.c src/ibw.h \
   src/ifinfo.c src/ifinfo.h \
   src/misc.c src/misc.h \
+  src/fs.c src/fs.h \
+  src/id.c src/id.h \
   src/traffic.c src/traffic.h
 endif
 
@@ -94,9 +104,18 @@ release: distcheck
 	ls -l $(PACKAGE_NAME)-$(PACKAGE_VERSION).tar.gz
 
 install-data-hook:
-	$(DESTDIR)$(bindir)/vnstat$(EXEEXT) --showconfig >vnstat.conf && \
-	  $(MKDIR_P) $(DESTDIR)$(sysconfdir) && \
-	  mv -f vnstat.conf $(DESTDIR)$(sysconfdir)/vnstat.conf
+	$(MKDIR_P) $(DESTDIR)$(sysconfdir)
+if IS_CROSSCOMPILED
+	if [ ! -f $(DESTDIR)$(sysconfdir)/vnstat.conf ]; \
+	then cp -fv $(srcdir)/cfg/vnstat.conf $(DESTDIR)$(sysconfdir)/vnstat.conf; \
+	fi
+else
+	$(DESTDIR)$(bindir)/vnstat$(EXEEXT) --showconfig >vnstat.conf.new
+	if [ -f $(DESTDIR)$(sysconfdir)/vnstat.conf ]; \
+	then cp -fv $(DESTDIR)$(sysconfdir)/vnstat.conf vnstat.conf.old; \
+	fi
+	cp -fv vnstat.conf.new $(DESTDIR)$(sysconfdir)/vnstat.conf
+endif
 	@echo
 	@echo "============================================================================"
 	@echo "  Note: No service file has been installed for starting the daemon"
@@ -116,4 +135,4 @@ uninstall-hook:
 	@echo
 
 clean-local:
-	-rm -fr coverage *.lcov *.gz test*.log test*.xml src/*.gc* tests/*.gc*
+	-rm -fr coverage *.lcov *.gz test*.log test*.xml src/*.gc* tests/*.gc* *.old *.new

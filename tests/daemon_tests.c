@@ -4,63 +4,8 @@
 #include "dbaccess.h"
 #include "dbcache.h"
 #include "cfg.h"
+#include "fs.h"
 #include "daemon.h"
-
-START_TEST(getuser_root_string)
-{
-	ck_assert_int_eq((int)getuser("root"), 0);
-}
-END_TEST
-
-START_TEST(getuser_root_numeric)
-{
-	ck_assert_int_eq((int)getuser("0"), 0);
-}
-END_TEST
-
-START_TEST(getuser_no_such_user_string)
-{
-	suppress_output();
-	getuser("reallynosuchuser");
-}
-END_TEST
-
-START_TEST(getuser_no_such_user_numeric)
-{
-	suppress_output();
-	getuser("99999999");
-}
-END_TEST
-
-START_TEST(getgroup_root_string)
-{
-#if defined(__linux__) || defined(__GNU__) || defined(__GLIBC__)
-	ck_assert_int_eq((int)getgroup("root"), 0);
-#else
-	ck_assert_int_eq((int)getgroup("wheel"), 0);
-#endif
-}
-END_TEST
-
-START_TEST(getgroup_root_numeric)
-{
-	ck_assert_int_eq((int)getgroup("0"), 0);
-}
-END_TEST
-
-START_TEST(getgroup_no_such_user_string)
-{
-	suppress_output();
-	getgroup("reallynosuchgroup");
-}
-END_TEST
-
-START_TEST(getgroup_no_such_user_numeric)
-{
-	suppress_output();
-	getgroup("99999999");
-}
-END_TEST
 
 START_TEST(debugtimestamp_does_not_exit)
 {
@@ -637,6 +582,7 @@ START_TEST(datalist_writedb_detects_missing_database_file)
 	initdstate(&s);
 	s.dodbsave = 1;
 	s.dbsaved = 0;
+	disable_logprints();
 	strncpy_nt(s.dirname, TESTDBDIR, 512);
 	ck_assert_int_eq(remove_directory(TESTDIR), 1);
 	ck_assert_int_eq(cacheadd("name1", 0), 1);
@@ -650,10 +596,12 @@ END_TEST
 START_TEST(datalist_writedb_writes_database_file)
 {
 	DSTATE s;
+	initdb();
 	initdstate(&s);
 	s.dodbsave = 1;
 	s.dbsaved = 0;
 	disable_logprints();
+	strncpy_nt(data.interface, "name1", 32);
 	strncpy_nt(s.dirname, TESTDBDIR, 512);
 	ck_assert_int_eq(remove_directory(TESTDIR), 1);
 	ck_assert_int_eq(clean_testdbdir(), 1);
@@ -788,51 +736,6 @@ START_TEST(handleintsignals_handles_signals)
 }
 END_TEST
 
-START_TEST(direxists_with_no_dir)
-{
-	defaultcfg();
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(direxists(""), 0);
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-}
-END_TEST
-
-START_TEST(direxists_with_dir)
-{
-	defaultcfg();
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(clean_testdbdir(), 1);
-	ck_assert_int_eq(direxists(TESTDIR), 1);
-	ck_assert_int_eq(direxists(TESTDBDIR), 1);
-}
-END_TEST
-
-START_TEST(mkpath_with_no_dir)
-{
-	defaultcfg();
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(mkpath("", 0775), 0);
-}
-END_TEST
-
-START_TEST(mkpath_with_dir)
-{
-	defaultcfg();
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-	ck_assert_int_eq(direxists(TESTDBDIR), 0);
-	ck_assert_int_eq(mkpath(TESTDIR, 0775), 1);
-	ck_assert_int_eq(direxists(TESTDIR), 1);
-	ck_assert_int_eq(direxists(TESTDBDIR), 0);
-	ck_assert_int_eq(mkpath(TESTDBDIR, 0775), 1);
-	ck_assert_int_eq(direxists(TESTDBDIR), 1);
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(direxists(TESTDBDIR), 0);
-	ck_assert_int_eq(mkpath(TESTDBDIR, 0775), 1);
-	ck_assert_int_eq(direxists(TESTDBDIR), 1);
-}
-END_TEST
-
 START_TEST(preparedirs_with_no_dir)
 {
 	char logdir[512], piddir[512];
@@ -887,69 +790,9 @@ START_TEST(preparedirs_with_dir)
 }
 END_TEST
 
-START_TEST(preparevnstatdir_with_no_vnstat)
-{
-	char testdir[512], testpath[512];
-	defaultcfg();
-	cfg.updatefileowner = 0;
-
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-	snprintf(testdir, 512, "%s/here/be/dragons", TESTDIR);
-	snprintf(testpath, 512, "%s/or_something.txt", testdir);
-	preparevnstatdir(testpath, "user", "group");
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-	ck_assert_int_eq(direxists(testdir), 0);
-
-	snprintf(testdir, 512, "%s/here/be/vnstat/dragons", TESTDIR);
-	snprintf(testpath, 512, "%s/or_something.txt", testdir);
-	preparevnstatdir(testpath, "user", "group");
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-	ck_assert_int_eq(direxists(testdir), 0);
-
-	snprintf(testdir, 512, "%s/here/be/vnstati", TESTDIR);
-	snprintf(testpath, 512, "%s/or_something.txt", testdir);
-	preparevnstatdir(testpath, "user", "group");
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-	ck_assert_int_eq(direxists(testdir), 0);
-}
-END_TEST
-
-START_TEST(preparevnstatdir_with_vnstat)
-{
-	char testdir[512], testpath[512];
-	defaultcfg();
-	cfg.updatefileowner = 0;
-
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-	snprintf(testdir, 512, "%s/here/be/vnstat", TESTDIR);
-	snprintf(testpath, 512, "%s/or_something.txt", testdir);
-	preparevnstatdir(testpath, "user", "group");
-	ck_assert_int_eq(direxists(TESTDIR), 1);
-	ck_assert_int_eq(direxists(testdir), 1);
-
-	ck_assert_int_eq(remove_directory(TESTDIR), 1);
-	ck_assert_int_eq(direxists(TESTDIR), 0);
-	snprintf(testdir, 512, "%s/here/be/vnstatd", TESTDIR);
-	snprintf(testpath, 512, "%s/or_something.txt", testdir);
-	preparevnstatdir(testpath, "user", "group");
-	ck_assert_int_eq(direxists(TESTDIR), 1);
-	ck_assert_int_eq(direxists(testdir), 1);
-}
-END_TEST
-
 void add_daemon_tests(Suite *s)
 {
 	TCase *tc_daemon = tcase_create("Daemon");
-	tcase_add_test(tc_daemon, getuser_root_string);
-	tcase_add_test(tc_daemon, getuser_root_numeric);
-	tcase_add_exit_test(tc_daemon, getuser_no_such_user_string, 1);
-	tcase_add_exit_test(tc_daemon, getuser_no_such_user_numeric, 1);
-	tcase_add_test(tc_daemon, getgroup_root_string);
-	tcase_add_test(tc_daemon, getgroup_root_numeric);
-	tcase_add_exit_test(tc_daemon, getgroup_no_such_user_string, 1);
-	tcase_add_exit_test(tc_daemon, getgroup_no_such_user_numeric, 1);
 	tcase_add_test(tc_daemon, debugtimestamp_does_not_exit);
 	tcase_add_test(tc_daemon, initdstate_does_not_crash);
 	tcase_add_test(tc_daemon, addinterfaces_does_nothing_with_no_files);
@@ -984,14 +827,8 @@ void add_daemon_tests(Suite *s)
 	tcase_add_test(tc_daemon, processdatalist_empty_does_nothing);
 	tcase_add_test(tc_daemon, processdatalist_filled_does_things);
 	tcase_add_test(tc_daemon, handleintsignals_handles_signals);
-	tcase_add_test(tc_daemon, direxists_with_no_dir);
-	tcase_add_test(tc_daemon, direxists_with_dir);
-	tcase_add_test(tc_daemon, mkpath_with_no_dir);
-	tcase_add_test(tc_daemon, mkpath_with_dir);
 	tcase_add_test(tc_daemon, preparedirs_with_no_dir);
 	tcase_add_test(tc_daemon, preparedirs_with_dir);
-	tcase_add_test(tc_daemon, preparevnstatdir_with_no_vnstat);
-	tcase_add_test(tc_daemon, preparevnstatdir_with_vnstat);
 	suite_add_tcase(s, tc_daemon);
 }
 
