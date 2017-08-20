@@ -79,6 +79,10 @@ and most can be changed later from the config file.
 /* 0 = KiB/MiB/GiB/TiB, 1 = KB/MB/GB/TB */
 #define UNITMODE 0
 
+/* rate unit mode */
+/* 0 = Kibit/s..., 1 = kbit/s... */
+#define RATEUNITMODE 1
+
 /* output style */
 /* 0 = minimal/narrow, 1 = bars everywhere */
 /* 2 = same as 1 + rate in summary and weekly */
@@ -222,9 +226,9 @@ typedef struct {
 	char rxchar[2], txchar[2], rxhourchar[2], txhourchar[2];
 	char cbg[8], cedge[8], cheader[8], cheadertitle[8], cheaderdate[8], ctext[8];
 	char cline[8], clinel[8], cvnstat[8], crx[8], crxd[8], ctx[8], ctxd[8];
-	int32_t unit, ostyle, rateunit, bvar, qmode, sampletime, hourlyrate, summaryrate;
-	int32_t monthrotate, maxbw, flock, spacecheck, traflessday, transbg, slayout;
-	char logfile[512], pidfile[512];
+	int32_t unitmode, rateunitmode, rateunit, bvar, qmode, sampletime, hourlyrate, summaryrate;
+	int32_t monthrotate, maxbw, flock, spacecheck, traflessday, transbg, slayout, ostyle;
+	char cfgfile[512], logfile[512], pidfile[512];
 	char daemonuser[33], daemongroup[33];
 	int32_t updateinterval, pollinterval, saveinterval, offsaveinterval, savestatus, uselogging;
 	int32_t createdirs, updatefileowner, bwdetection, bwdetectioninterval, utflocale;
@@ -295,6 +299,7 @@ typedef enum PrintType {
 /* common functions */
 int printe(PrintType type);
 int logprint(PrintType type);
+int verifylogaccess(void);
 int dmonth(int month);
 uint32_t mosecs(void);
 uint64_t countercalc(const uint64_t *a, const uint64_t *b);
@@ -315,5 +320,6 @@ int debug;
 int noexit;      /* = running as daemon if 2 */
 int intsignal;
 int pidfile;
+int disableprints;
 
 #endif
