@@ -6,3 +6,6 @@ systemd_user.diff
 0006-fix-clang-tidy-issues.patch
 0007-fix-compile-warnings.patch
 0008-fix-misc-compiler-warnings.patch
+0009-fix-Wimplicit-function-declaration-on-kFreeBSD.patch
+0010-fix-gcc-Wformat-truncation-warnings.patch
+0011-fix-gcc-Wdiscarded-qualifiers-warnings-in-testsuite.patch
