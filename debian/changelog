@@ -1,4 +1,4 @@
-vnstat (1.17-1+nmu1) UNRELEASED; urgency=medium
+vnstat (1.17-1+nmu1) unstable; urgency=medium
 
   * Non-maintainer upload
 
@@ -57,7 +57,7 @@ vnstat (1.17-1+nmu1) UNRELEASED; urgency=medium
       + Add standard c warnings
     - vnstat.service: Use proper hook for systemd service
 
- -- Christian Göttsche <cgzones@googlemail.com>  Mon, 04 Sep 2017 20:21:53 +0200
+ -- Christian Göttsche <cgzones@googlemail.com>  Mon, 04 Sep 2017 21:56:23 +0200
 
 vnstat (1.15-2) unstable; urgency=medium
 
