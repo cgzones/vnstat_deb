@@ -47,12 +47,17 @@ vnstat (1.17-1+nmu1) UNRELEASED; urgency=medium
         fix compile warnings
         fix clang-tidy issues
         fix printf argument
+      + add patch to fix further compiler warnings
+      + add patches for kFreeBSB, discard qualifiers
+        and format truncation warnings
+    - postinst: remove version dependency
     - rules
       + Update for compat level 10
       + Enable hardening
+      + Add standard c warnings
     - vnstat.service: Use proper hook for systemd service
 
- -- Christian Göttsche <cgzones@googlemail.com>  Sun, 20 Aug 2017 10:59:26 +0200
+ -- Christian Göttsche <cgzones@googlemail.com>  Mon, 04 Sep 2017 20:21:53 +0200
 
 vnstat (1.15-2) unstable; urgency=medium
 
