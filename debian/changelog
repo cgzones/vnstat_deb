@@ -50,6 +50,7 @@ vnstat (1.17-1+nmu1) unstable; urgency=medium
       + add patch to fix further compiler warnings
       + add patches for kFreeBSB, discard qualifiers
         and format truncation warnings
+      + add patches for coverity issues
     - postinst: remove version dependency
     - rules
       + Update for compat level 10

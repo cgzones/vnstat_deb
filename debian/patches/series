@@ -9,3 +9,7 @@ systemd_user.diff
 0009-fix-Wimplicit-function-declaration-on-kFreeBSD.patch
 0010-fix-gcc-Wformat-truncation-warnings.patch
 0011-fix-gcc-Wdiscarded-qualifiers-warnings-in-testsuite.patch
+0012-fix-possible-not-null-terminated-string.patch
+0013-fix-resource-leak.patch
+0015-fix-Time-of-check-time-of-use-issues.patch
+0015-check-number-of-items-read-by-fread.patch
