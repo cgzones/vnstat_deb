@@ -6,14 +6,18 @@ fread() might not null-terminate strings when a broken database is read.
 
 Found by covertity
 ---
- src/dbaccess.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ src/dbaccess.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/src/dbaccess.c b/src/dbaccess.c
-index 33b939c..ffab312 100644
+index 33b939c..77997f9 100644
 --- a/src/dbaccess.c
 +++ b/src/dbaccess.c
-@@ -37,6 +37,8 @@ int readdb(const char *iface, const char *dirname, const int force)
+@@ -34,9 +34,12 @@ int readdb(const char *iface, const char *dirname, const int force)
+ 		}
+ 	} else {
+ 		if (debug) {
++			data.interface[sizeof(data.interface) - 1] = 0;
  			printf("db: Database loaded for interface \"%s\"...\n", data.interface);
  		}
  	}
@@ -22,7 +26,11 @@ index 33b939c..ffab312 100644
  
  	if (data.version == DBVERSION) {
  		if (!validatedb() && !force) {
-@@ -89,6 +91,8 @@ int readdb(const char *iface, const char *dirname, const int force)
+@@ -86,9 +89,12 @@ int readdb(const char *iface, const char *dirname, const int force)
+ 				}
+ 			} else {
+ 				if (debug) {
++					data.interface[sizeof(data.interface) - 1] = 0;
  					printf("db: Backup database loaded for interface \"%s\"...\n", data.interface);
  				}
  			}
