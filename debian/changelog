@@ -1,12 +1,11 @@
-vnstat (1.17-1+nmu1) unstable; urgency=medium
-
-  * Non-maintainer upload
+vnstat (1.17-1) unstable; urgency=medium
 
   * New upstream version 1.17
   
   * debian/
     - compat: Switch to compat level 10
     - control
+      + Set myself as uploader
       + Bump Standards-Version to 4.1.0, no changes needed.
       + Update Build-Depends
     - copyright: format according to

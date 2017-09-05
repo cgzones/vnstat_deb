@@ -2,6 +2,7 @@ Source: vnstat
 Section: net
 Priority: optional
 Maintainer: Felix Geyer <fgeyer@debian.org>
+Uploaders: Christian Göttsche <cgzones@googlemail.com>
 Build-Depends: debhelper (>= 10), libgd-dev, check
 Standards-Version: 4.1.0
 Homepage: http://humdi.net/vnstat/
