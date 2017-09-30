@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -eu
+
+vnstat -d
+vnstati -d -o daily.png
+test -f daily.png

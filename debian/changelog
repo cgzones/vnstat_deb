@@ -29,9 +29,10 @@ vnstat (1.17-1) unstable; urgency=medium
       + Update for compat level 10
       + Enable hardening
       + Add standard c warnings
+    - tests/: Add minimal autopkgtest suite
     - vnstat.service: Use proper hook for systemd service
 
- -- Christian Göttsche <cgzones@googlemail.com>  Mon, 04 Sep 2017 21:56:23 +0200
+ -- Christian Göttsche <cgzones@googlemail.com>  Sat, 30 Sep 2017 21:44:00 +0200
 
 vnstat (1.15-2) unstable; urgency=medium
 

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -eu
+
+vnstat --version
+vnstati --version
