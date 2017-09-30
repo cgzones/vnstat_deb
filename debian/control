@@ -1,13 +1,12 @@
 Source: vnstat
 Section: net
 Priority: optional
-Maintainer: Felix Geyer <fgeyer@debian.org>
-Uploaders: Christian Göttsche <cgzones@googlemail.com>
+Maintainer: Christian Göttsche <cgzones@googlemail.com>
 Build-Depends: debhelper (>= 10), libgd-dev, check
 Standards-Version: 4.1.0
 Homepage: http://humdi.net/vnstat/
-Vcs-Git: https://anonscm.debian.org/git/collab-maint/vnstat.git
-Vcs-Browser: https://anonscm.debian.org/git/collab-maint/vnstat.git
+Vcs-Git: https://github.com/cgzones/vnstat_deb
+Vcs-Browser: https://github.com/cgzones/vnstat_deb
 
 Package: vnstat
 Architecture: any
