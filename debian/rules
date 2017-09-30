@@ -6,8 +6,5 @@ export DEB_CFLAGS_MAINT_APPEND = -Wall -Wextra
 %:
 	dh $@
 
-override_dh_auto_build:
-	dh_auto_build -- all
-
 override_dh_missing:
 	dh_missing --fail-missing
