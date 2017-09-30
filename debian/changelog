@@ -5,7 +5,7 @@ vnstat (1.17-1) unstable; urgency=medium
   * debian/
     - compat: Switch to compat level 10
     - control
-      + Set myself as maintainer
+      + Set myself as maintainer, many thanks to Felix Geyer for his work
       + Bump Standards-Version to 4.1.1
       + Update Build-Depends
     - copyright: format according to

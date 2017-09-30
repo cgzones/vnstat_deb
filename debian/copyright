@@ -4,7 +4,7 @@ Upstream-Contact: Teemu Toivola <vergo@humdi.net>
 Source: http://humdi.net/vnstat/
   
 Files: *
-Copyright: Copyright (c) 2002-17 Teemu Toivola <tst@iki.fi>
+Copyright: Copyright (c) 2002-2017 Teemu Toivola <tst@iki.fi>
 License: GPL-2
 
 Files: examples/vnstat.cgi
@@ -18,6 +18,8 @@ Files: debian/*
 Copyright: Copyright (C) 2004 Teemu Toivola <vergo@humdi.net>
            Copyright (C) 2006-2010 Aurélien GÉRÔME <ag@roxor.cx>
            Copyright (C) 2010 Iulian Udrea <iulian@ubuntu.com>
+           Copyright (C) 2013-2017 Felix Geyer <fgeyer@debian.org>
+           Copyright (C) 2017 Christian Göttsche <cgzones@googlemail.com>
 License: GPL-2
 
 License: GPL-2
