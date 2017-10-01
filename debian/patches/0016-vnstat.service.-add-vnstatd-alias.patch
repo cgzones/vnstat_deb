@@ -1,0 +1,17 @@
+From: =?utf-8?q?Christian_G=C3=B6ttsche?= <cgzones@googlemail.com>
+Date: Sun, 1 Oct 2017 14:14:36 +0200
+Subject: vnstat.service. add vnstatd alias
+
+---
+ examples/systemd/vnstat.service | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/examples/systemd/vnstat.service b/examples/systemd/vnstat.service
+index 057fa56..eaf521b 100644
+--- a/examples/systemd/vnstat.service
++++ b/examples/systemd/vnstat.service
+@@ -10,3 +10,4 @@ User=vnstat
+ 
+ [Install]
+ WantedBy=multi-user.target
++Alias=vnstatd.service
