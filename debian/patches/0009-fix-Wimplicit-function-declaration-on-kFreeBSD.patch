@@ -7,7 +7,7 @@ Subject: fix Wimplicit-function-declaration on kFreeBSD
  1 file changed, 4 insertions(+)
 
 diff --git a/src/misc.c b/src/misc.c
-index cfc7295..84c22ce 100644
+index 9842448..5a6ef63 100644
 --- a/src/misc.c
 +++ b/src/misc.c
 @@ -1,6 +1,10 @@

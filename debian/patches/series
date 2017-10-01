@@ -2,15 +2,4 @@ pidfile_path.diff
 systemd_user.diff
 0003-spelling-fixes.patch
 0004-Makefile.am-install-data-hook-depends-on-install-exe.patch
-0005-fix-printf-argument.patch
-0006-fix-clang-tidy-issues.patch
-0007-fix-compile-warnings.patch
-0008-fix-misc-compiler-warnings.patch
 0009-fix-Wimplicit-function-declaration-on-kFreeBSD.patch
-0010-fix-gcc-Wformat-truncation-warnings.patch
-0011-fix-gcc-Wdiscarded-qualifiers-warnings-in-testsuite.patch
-0012-fix-possible-not-null-terminated-string.patch
-0013-fix-resource-leak.patch
-0015-fix-Time-of-check-time-of-use-issues.patch
-0015-check-number-of-items-read-by-fread.patch
-0016-vnstat.service.-add-vnstatd-alias.patch
