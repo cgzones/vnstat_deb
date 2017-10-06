@@ -3,10 +3,8 @@
 set -eu
 
 if [ "$1" = "configure" ]; then
-  if ! getent passwd vnstat >/dev/null; then
-    adduser --system --group --quiet --no-create-home --home /var/lib/vnstat vnstat
-  fi
-
+  adduser --system --group --quiet --gecos "vnstat daemon" --no-create-home --home /var/lib/vnstat vnstat
+  
   chown root:vnstat /etc/vnstat.conf
   chown -R vnstat:vnstat /var/lib/vnstat
 fi

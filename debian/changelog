@@ -18,6 +18,7 @@ vnstat (1.17-1) unstable; urgency=medium
       + Add spelling patch, based on lintian findings
       + add patches for kFreeBSB implicit function declaration
     - postinst: remove version dependency
+    - postrm: delete state directory and daemon user upon purge
     - rules
       + Update for compat level 10
       + Enable hardening
@@ -25,7 +26,7 @@ vnstat (1.17-1) unstable; urgency=medium
     - tests/: Add minimal autopkgtest suite
     - vnstat.service: Use proper hook for systemd service
 
- -- Christian Göttsche <cgzones@googlemail.com>  Sun, 01 Oct 2017 14:17:12 +0200
+ -- Christian Göttsche <cgzones@googlemail.com>  Fri, 06 Oct 2017 17:38:00 +0200
 
 vnstat (1.15-2) unstable; urgency=medium
 
