@@ -16,14 +16,7 @@ vnstat (1.17-1) unstable; urgency=medium
       + Rebase
       + Drop install-ordering, applied upstream
       + Add spelling patch, based on lintian findings
-      + Cherrp-pick upstream commits:
-        fix compile warnings
-        fix clang-tidy issues
-        fix printf argument
-      + add patch to fix further compiler warnings
-      + add patches for kFreeBSB, discard qualifiers
-        and format truncation warnings
-      + add patches for coverity issues
+      + add patches for kFreeBSB implicit function declaration
     - postinst: remove version dependency
     - rules
       + Update for compat level 10
@@ -31,7 +24,6 @@ vnstat (1.17-1) unstable; urgency=medium
       + Add standard c warnings
     - tests/: Add minimal autopkgtest suite
     - vnstat.service: Use proper hook for systemd service
-        and add vnstatd alias
 
  -- Christian Göttsche <cgzones@googlemail.com>  Sun, 01 Oct 2017 14:17:12 +0200
 
