@@ -1,0 +1,35 @@
+From: =?utf-8?q?Christian_G=C3=B6ttsche?= <cgzones@googlemail.com>
+Date: Mon, 16 Oct 2017 17:48:55 +0200
+Subject: vnstat.service: suggest hardening options
+
+---
+ examples/systemd/vnstat.service | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/examples/systemd/vnstat.service b/examples/systemd/vnstat.service
+index 057fa56..6fc544a 100644
+--- a/examples/systemd/vnstat.service
++++ b/examples/systemd/vnstat.service
+@@ -7,6 +7,22 @@ After=network.target
+ ExecStart=/usr/sbin/vnstatd -n
+ ExecReload=/bin/kill -HUP $MAINPID
+ User=vnstat
++Restart=on-failure
++
++# Hardening
++#  (all but PrivateNetwork)
++#ProtectSystem=strict
++#StateDirectory=vnstat
++#PrivateDevices=yes
++#ProtectKernelTunables=yes
++#ProtectControlGroups=yes
++#ProtectHome=yes
++#ProtectKernelModules=yes
++#PrivateTmp=yes
++#MemoryDenyWriteExecute=yes
++#RestrictRealtime=yes
++#RestrictNamespaces=yes
++
+ 
+ [Install]
+ WantedBy=multi-user.target
