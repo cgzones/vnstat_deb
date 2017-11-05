@@ -1,0 +1,20 @@
+From: =?utf-8?q?Christian_G=C3=B6ttsche?= <cgzones@googlemail.com>
+Date: Sun, 5 Nov 2017 14:20:17 +0100
+Subject: vnstat.service: add 3s timeout for auto-restart
+
+---
+ examples/systemd/vnstat.service | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/examples/systemd/vnstat.service b/examples/systemd/vnstat.service
+index aedc072..c1ac051 100644
+--- a/examples/systemd/vnstat.service
++++ b/examples/systemd/vnstat.service
+@@ -8,6 +8,7 @@ ExecStart=/usr/sbin/vnstatd -n
+ ExecReload=/bin/kill -HUP $MAINPID
+ User=vnstat
+ Restart=on-failure
++RestartSec=3
+ 
+ # Hardening
+ #  (all but PrivateNetwork)
