@@ -2,8 +2,8 @@ Source: vnstat
 Section: net
 Priority: optional
 Maintainer: Christian Göttsche <cgzones@googlemail.com>
-Build-Depends: debhelper (>= 10), libgd-dev, check
-Standards-Version: 4.1.1
+Build-Depends: debhelper (>= 11), libgd-dev, check
+Standards-Version: 4.1.2
 Homepage: http://humdi.net/vnstat/
 Vcs-Git: https://github.com/cgzones/vnstat_deb
 Vcs-Browser: https://github.com/cgzones/vnstat_deb
