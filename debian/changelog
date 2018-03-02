@@ -1,4 +1,4 @@
-vnstat (1.17-2) UNRELEASED; urgency=medium
+vnstat (1.17-2) unstable; urgency=medium
 
   * vnstat.service: add 3s timeout for auto-restart (Closes: #814542)
   * debian/patches: (hopefully) fix kfreebsd build warning
@@ -10,7 +10,7 @@ vnstat (1.17-2) UNRELEASED; urgency=medium
   * debian/upstream/metadata: supply minimal metadata
   * debian: bump to standards version 4.1.3
 
- -- Christian Göttsche <cgzones@googlemail.com>  Fri, 02 Mar 2018 14:17:02 +0100
+ -- Christian Göttsche <cgzones@googlemail.com>  Fri, 02 Mar 2018 14:18:13 +0100
 
 vnstat (1.17-1) unstable; urgency=medium
 
