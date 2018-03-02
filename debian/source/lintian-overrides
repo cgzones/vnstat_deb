@@ -1,0 +1,2 @@
+# Reported at https://github.com/vergoh/vnstat/issues/90
+vnstat source: debian-watch-does-not-check-gpg-signature
