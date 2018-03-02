@@ -8,8 +8,9 @@ vnstat (1.17-2) UNRELEASED; urgency=medium
   * debian/watch: switch to github url for encrypted connection
   * debian/vnstat.postinst: do not run chown recursively
   * debian/upstream/metadata: supply minimal metadata
+  * debian: bump to standards version 4.1.3
 
- -- Christian Göttsche <cgzones@googlemail.com>  Fri, 02 Mar 2018 14:13:45 +0100
+ -- Christian Göttsche <cgzones@googlemail.com>  Fri, 02 Mar 2018 14:17:02 +0100
 
 vnstat (1.17-1) unstable; urgency=medium
 
