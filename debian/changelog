@@ -6,6 +6,7 @@ vnstat (1.17-2) UNRELEASED; urgency=medium
   * debian/sources/lintian-overrides:
         ignore debian-watch-does-not-check-gpg-signature
   * debian/watch: switch to github url for encrypted connection
+  * debian/vnstat.postinst: do not run chown recursively
 
  -- Christian Göttsche <cgzones@googlemail.com>  Mon, 25 Dec 2017 11:14:03 +0100
 

@@ -6,7 +6,7 @@ if [ "$1" = "configure" ]; then
   adduser --system --group --quiet --gecos "vnstat daemon" --no-create-home --home /var/lib/vnstat vnstat
   
   chown root:vnstat /etc/vnstat.conf
-  chown -R vnstat:vnstat /var/lib/vnstat
+  chown vnstat:vnstat /var/lib/vnstat
 fi
 
 #DEBHELPER#
