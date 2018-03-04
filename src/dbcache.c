@@ -5,7 +5,11 @@
 #include "cfg.h"
 #include "ibw.h"
 
-int cacheadd(const char *iface, int sync)
+/* global variables */
+datanode *dataptr;
+
+
+int cacheadd(const char *iface, short sync)
 {
 	datanode *p, *n;
 
@@ -23,7 +27,7 @@ int cacheadd(const char *iface, int sync)
 	}
 
 	/* add new node if not in list */
-	n = malloc(sizeof(datanode));
+	n = (datanode *)malloc(sizeof(datanode));
 
 	if (n == NULL) {
 		return 0;
@@ -109,7 +113,7 @@ int cacheupdate(void)
 	}
 
 	/* add new node if not in list */
-	n = malloc(sizeof(datanode));
+	n = (datanode *)malloc(sizeof(datanode));
 
 	if (n == NULL) {
 		return 0;
@@ -163,7 +167,7 @@ void cachestatus(void)
 			if (!ibwget(p->data.interface, &bwlimit) || bwlimit == 0) {
 				snprintf(bwtemp, 16, " (no limit) ");
 			} else {
-				snprintf(bwtemp, 16, " (%d Mbit) ", bwlimit);
+				snprintf(bwtemp, 16, " (%u Mbit) ", bwlimit);
 			}
 			strncat(buffer, p->data.interface, strlen(p->data.interface));
 			strncat(buffer, bwtemp, strlen(bwtemp));
@@ -330,19 +334,19 @@ uint32_t dbcheck(uint32_t dbhash, int *forcesave)
 	return newhash;
 }
 
-uint32_t simplehash(const char *data, int len)
+uint32_t simplehash(const char *input, int len)
 {
 	uint32_t hash = len;
 
-	if (len <= 0 || data == NULL) {
+	if (len <= 0 || input == NULL) {
 		return 0;
 	}
 
 	for (len--; len >= 0; len--) {
 		if (len > 0) {
-			hash += (int)data[len] * len;
+			hash += (int)input[len] * len;
 		} else {
-			hash += (int)data[len];
+			hash += (int)input[len];
 		}
 	}
 

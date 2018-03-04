@@ -51,6 +51,13 @@ void printcfgfile(void)
 	printf("# used rate unit (0 = bytes, 1 = bits)\n");
 	printf("RateUnit %d\n\n", cfg.rateunit);
 
+	printf("# number of decimals to use in outputs\n");
+	printf("DefaultDecimals %d\n", cfg.defaultdecimals);
+	printf("HourlyDecimals %d\n\n", cfg.hourlydecimals);
+
+	printf("# spacer for separating hourly sections (0 = none, 1 = '|', 2 = '][', 3 = '[ ]')\n");
+	printf("HourlySectionStyle %d\n\n", cfg.hourlystyle);
+
 	printf("# try to detect interface maximum bandwidth, 0 = disable feature\n");
 	printf("# MaxBandwidth will be used as fallback value when enabled\n");
 	printf("BandwidthDetection %d\n\n", cfg.bwdetection);
@@ -63,7 +70,7 @@ void printcfgfile(void)
 	printf("#MaxBWeth0 8\n");
 
 	while (p != NULL) {
-		printf("MaxBW%s %d\n", p->interface, p->limit);
+		printf("MaxBW%s %u\n", p->interface, p->limit);
 		p = p->next;
 	}
 
@@ -98,6 +105,10 @@ void printcfgfile(void)
 
 	printf("# switch to given user when started as root (leave empty to disable)\n");
 	printf("DaemonGroup \"%s\"\n\n", cfg.daemongroup);
+
+	printf("# how many minutes to wait during daemon startup for system clock to\n");
+	printf("# sync time if most recent database update appears to be in the future\n");
+	printf("TimeSyncWait %d\n\n", cfg.timesyncwait);
 
 	printf("# how often (in seconds) interface data is updated\n");
 	printf("UpdateInterval %d\n\n", cfg.updateinterval);
@@ -192,6 +203,9 @@ int loadcfg(const char *cfgfile)
 		{ "RateUnitMode", 0, &cfg.rateunitmode, 0, 0 },
 		{ "OutputStyle", 0, &cfg.ostyle, 0, 0 },
 		{ "RateUnit", 0, &cfg.rateunit, 0, 0 },
+		{ "DefaultDecimals", 0, &cfg.defaultdecimals, 0, 0 },
+		{ "HourlyDecimals", 0, &cfg.hourlydecimals, 0, 0 },
+		{ "HourlySectionStyle", 0, &cfg.hourlystyle, 0, 0 },
 		{ "BandwidthDetection", 0, &cfg.bwdetection, 0, 0 },
 		{ "MaxBandwidth", 0, &cfg.maxbw, 0, 0 },
 		{ "Sampletime", 0, &cfg.sampletime, 0, 0 },
@@ -202,6 +216,7 @@ int loadcfg(const char *cfgfile)
 		{ "TrafficlessDays", 0, &cfg.traflessday, 0, 0 },
 		{ "DaemonUser", cfg.daemonuser, 0, 33, 0 },
 		{ "DaemonGroup", cfg.daemongroup, 0, 33, 0 },
+		{ "TimeSyncWait", 0, &cfg.timesyncwait, 0, 0 },
 		{ "UpdateInterval", 0, &cfg.updateinterval, 0, 0 },
 		{ "PollInterval", 0, &cfg.pollinterval, 0, 0 },
 		{ "SaveInterval", 0, &cfg.saveinterval, 0, 0 },
@@ -315,6 +330,24 @@ void validatecfg(void)
 		printe(PT_Config);
 	}
 
+	if (cfg.defaultdecimals<0 || cfg.defaultdecimals>2) {
+		cfg.defaultdecimals = DEFAULTDECIMALS;
+		snprintf(errorstring, 512, "Invalid value for DefaultDecimals, resetting to \"%d\".", cfg.defaultdecimals);
+		printe(PT_Config);
+	}
+
+	if (cfg.hourlydecimals<0 || cfg.hourlydecimals>2) {
+		cfg.hourlydecimals = HOURLYDECIMALS;
+		snprintf(errorstring, 512, "Invalid value for HourlyDecimals, resetting to \"%d\".", cfg.hourlydecimals);
+		printe(PT_Config);
+	}
+
+	if (cfg.hourlystyle<0 || cfg.hourlystyle>3) {
+		cfg.hourlystyle = HOURLYSTYLE;
+		snprintf(errorstring, 512, "Invalid value for HourlySectionStyle, resetting to \"%d\".", cfg.hourlystyle);
+		printe(PT_Config);
+	}
+
 	if (cfg.bvar<0 || cfg.bvar>300) {
 		cfg.bvar = BVAR;
 		snprintf(errorstring, 512, "Invalid value for BootVariation, resetting to \"%d\".", cfg.bvar);
@@ -354,6 +387,12 @@ void validatecfg(void)
 	if (cfg.dbdir[0] != '/') {
 		strncpy_nt(cfg.dbdir, DATABASEDIR, 512);
 		snprintf(errorstring, 512, "DatabaseDir doesn't start with \"/\", resetting to default.");
+		printe(PT_Config);
+	}
+
+	if (cfg.timesyncwait<0 || cfg.timesyncwait>60) {
+		cfg.timesyncwait = TIMESYNCWAIT;
+		snprintf(errorstring, 512, "Invalid value for TimeSyncWait, resetting to \"%d\".", cfg.timesyncwait);
 		printe(PT_Config);
 	}
 
@@ -484,6 +523,9 @@ void defaultcfg(void)
 	cfg.rateunitmode = RATEUNITMODE;
 	cfg.ostyle = OSTYLE;
 	cfg.rateunit = RATEUNIT;
+	cfg.defaultdecimals = DEFAULTDECIMALS;
+	cfg.hourlydecimals = HOURLYDECIMALS;
+	cfg.hourlystyle = HOURLYSTYLE;
 	cfg.bwdetection = BWDETECT;
 	cfg.bwdetectioninterval = BWDETECTINTERVAL;
 	cfg.maxbw = DEFMAXBW;
@@ -508,6 +550,7 @@ void defaultcfg(void)
 
 	cfg.daemonuser[0] = '\0';
 	cfg.daemongroup[0] = '\0';
+	cfg.timesyncwait = TIMESYNCWAIT;
 	cfg.updateinterval = UPDATEINTERVAL;
 	cfg.pollinterval = POLLINTERVAL;
 	cfg.saveinterval = SAVEINTERVAL;
@@ -630,7 +673,7 @@ int setcfgvalue(struct cfgsetting *cset, const char *value, const char *cfgline)
 		if (debug)
 			printf("  c: %s   -> \"%s\": \"%s\"\n", cfgline, cset->name, cset->locc);
 	} else if (isdigit(value[0])) {
-		*cset->loci = strtol(value, (char **)NULL, 0);
+		*cset->loci = (int32_t) strtol(value, (char **)NULL, 0);
 		if (debug)
 			printf("  i: %s   -> \"%s\": %d\n", cfgline, cset->name, *cset->loci);
 	} else {

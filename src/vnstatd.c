@@ -1,5 +1,5 @@
 /*
-vnStat daemon - Copyright (c) 2008-2016 Teemu Toivola <tst@iki.fi>
+vnStat daemon - Copyright (c) 2008-2018 Teemu Toivola <tst@iki.fi>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 		for (currentarg=1; currentarg<argc; currentarg++) {
 			if ((strcmp(argv[currentarg],"-D")==0) || (strcmp(argv[currentarg],"--debug")==0)) {
 				debug = 1;
+				printf("Debug enabled, vnstatd %s\n", VERSION);
 			} else if (strcmp(argv[currentarg],"--config")==0) {
 				if (currentarg+1<argc) {
 					strncpy_nt(s.cfgfile, argv[currentarg+1], 512);
@@ -161,6 +162,19 @@ int main(int argc, char *argv[])
 	s.running = 1;
 	snprintf(errorstring, 512, "vnStat daemon %s started. (pid:%d uid:%d gid:%d)", getversion(), (int)getpid(), (int)getuid(), (int)getgid());
 	printe(PT_Info);
+
+	/* warmup */
+	if (s.dbcount == 0) {
+		filldatabaselist(&s);
+		s.prevdbsave = 0;
+	}
+	while (s.running && s.dbcount && waittimesync(&s)) {
+		if (intsignal) {
+			handleintsignals(&s);
+		} else {
+			sleep(5);
+		}
+	}
 
 	/* main loop */
 	while (s.running) {

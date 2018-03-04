@@ -102,6 +102,13 @@ and most can be changed later from the config file.
 /* 0 = bytes, 1 = bits */
 #define RATEUNIT 1
 
+/* number of decimals */
+#define DEFAULTDECIMALS 2
+#define HOURLYDECIMALS 1
+
+/* hourly section style */
+#define HOURLYSTYLE 2
+
 /* default interface */
 #ifndef DEFIFACE
 #define DEFIFACE "eth0"
@@ -167,6 +174,14 @@ and most can be changed later from the config file.
 /* 1 = 1.13- */
 #define JSONVERSION 1
 
+/* json format version, -tr */
+/* 1 = 1.18- */
+#define JSONVERSION_TR 1
+
+/* json format version, --live */
+/* 1 = 1.18- */
+#define JSONVERSION_LIVE 1
+
 /* --oneline format version */
 #define ONELINEVERSION 1
 
@@ -190,6 +205,7 @@ and most can be changed later from the config file.
 
 /* daemon defaults */
 #define UPDATEINTERVAL 30
+#define TIMESYNCWAIT 5
 #define POLLINTERVAL 5
 #define SAVEINTERVAL 5
 #define OFFSAVEINTERVAL 30
@@ -228,10 +244,11 @@ typedef struct {
 	char cline[8], clinel[8], cvnstat[8], crx[8], crxd[8], ctx[8], ctxd[8];
 	int32_t unitmode, rateunitmode, rateunit, bvar, qmode, sampletime, hourlyrate, summaryrate;
 	int32_t monthrotate, maxbw, flock, spacecheck, traflessday, transbg, slayout, ostyle;
+	int32_t defaultdecimals, hourlydecimals, hourlystyle;
 	char cfgfile[512], logfile[512], pidfile[512];
 	char daemonuser[33], daemongroup[33];
-	int32_t updateinterval, pollinterval, saveinterval, offsaveinterval, savestatus, uselogging;
-	int32_t createdirs, updatefileowner, bwdetection, bwdetectioninterval, utflocale;
+	int32_t timesyncwait, updateinterval, pollinterval, saveinterval, offsaveinterval, savestatus;
+	int32_t uselogging, createdirs, updatefileowner, bwdetection, bwdetectioninterval, utflocale;
 } CFG;
 
 /* internal interface information structure */
@@ -301,25 +318,25 @@ int printe(PrintType type);
 int logprint(PrintType type);
 int verifylogaccess(void);
 int dmonth(int month);
-uint32_t mosecs(void);
+time_t mosecs(void);
 uint64_t countercalc(const uint64_t *a, const uint64_t *b);
 void addtraffic(uint64_t *destmb, int *destkb, const uint64_t srcmb, const int srckb);
 uint64_t mbkbtokb(uint64_t mb, uint64_t kb);
 char *strncpy_nt(char *dest, const char *src, size_t n);
 int isnumeric(const char *s);
-void panicexit(const char *sourcefile, const int sourceline);
+void panicexit(const char *sourcefile, const int sourceline) __attribute__((noreturn));
 char *getversion(void);
 
 /* global variables */
-DATA data;
-CFG cfg;
-IFINFO ifinfo;
-char errorstring[512];
-ibwnode *ifacebw;
-int debug;
-int noexit;      /* = running as daemon if 2 */
-int intsignal;
-int pidfile;
-int disableprints;
+extern DATA data;
+extern CFG cfg;
+extern IFINFO ifinfo;
+extern char errorstring[512];
+extern ibwnode *ifacebw;
+extern int debug;
+extern int noexit;      /* = running as daemon if 2 */
+extern int intsignal;
+extern int pidfile;
+extern int disableprints;
 
 #endif

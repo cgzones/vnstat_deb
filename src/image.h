@@ -9,7 +9,7 @@
 #include <gdfontg.h>   /* gdFontGetGiant() */
 
 /* rectangle size */
-#define YBEGINOFFSET -1
+#define YBEGINOFFSET (-1)
 #define YENDOFFSET 6
 
 /* donut size */
@@ -27,7 +27,7 @@ typedef struct {
 void initimagecontent(IMAGECONTENT *ic);
 void drawimage(IMAGECONTENT *ic);
 void colorinit(IMAGECONTENT *ic);
-void colorinitcheck(char *color, int value, char *cfgtext, int *rgb);
+void colorinitcheck(const char *color, int value, const char *cfgtext, const int *rgb);
 void layoutinit(IMAGECONTENT *ic, char *title, int width, int height);
 void drawlegend(IMAGECONTENT *ic, int x, int y);
 void drawbar(IMAGECONTENT *ic, int x, int y, int len, uint64_t rx, int rxk, uint64_t tx, int txk, uint64_t max);

@@ -1,6 +1,10 @@
 #if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) && !defined(__APPLE__) && !defined(__FreeBSD_kernel__)
 #define _XOPEN_SOURCE 600
 #endif
+/* enable wcswidth on kFreeBSD */
+#if defined(__FreeBSD_kernel__) && defined(__GLIBC__)
+#define __USE_XOPEN
+#endif
 #include "common.h"
 #include "misc.h"
 #include <wchar.h>
@@ -195,7 +199,7 @@ uint64_t getbtime(void)
 char *getvalue(uint64_t mb, uint64_t kb, int len, int type)
 {
 	static char buffer[64];
-	int declen=2;
+	int declen = cfg.defaultdecimals;
 	uint64_t kB;
 
 	/* request types: 1) normal  2) estimate  3) image scale */
@@ -236,15 +240,15 @@ char *getvalue(uint64_t mb, uint64_t kb, int len, int type)
 	return buffer;
 }
 
-char *getrate(uint64_t mb, uint64_t kb, uint32_t interval, int len)
+char *getrate(uint64_t mb, uint64_t kb, time_t interval, int len)
 {
 	return gettrafficrate(mbkbtokb(mb, kb) * 1024, interval, len);
 }
 
-char *gettrafficrate(uint64_t bytes, uint32_t interval, int len)
+char *gettrafficrate(uint64_t bytes, time_t interval, int len)
 {
 	static char buffer[64];
-	int unitmode, declen = 2;
+	int unitmode, declen = cfg.defaultdecimals;
 	uint64_t b;
 
 	if (interval==0) {
@@ -304,9 +308,9 @@ uint64_t getscale(uint64_t kb)
 	return result;
 }
 
-char *getunitprefix(int index)
+const char *getunitprefix(int index)
 {
-	static char *unitprefix[] = { "na", "KiB", "MiB", "GiB", "TiB",
+	static const char *unitprefix[] = { "na", "KiB", "MiB", "GiB", "TiB",
                                    "KB",  "MB",  "GB",  "TB" };
 
 	if (index>UNITPREFIXCOUNT) {
@@ -316,9 +320,9 @@ char *getunitprefix(int index)
 	}
 }
 
-char *getrateunitprefix(int unitmode, int index)
+const char *getrateunitprefix(int unitmode, int index)
 {
-	static char *rateunitprefix[] = { "na", "KiB/s", "MiB/s", "GiB/s", "TiB/s",
+	static const char *rateunitprefix[] = { "na", "KiB/s", "MiB/s", "GiB/s", "TiB/s",
                                     "KB/s",  "MB/s",  "GB/s",  "TB/s",
                                     "Kibit/s",  "Mibit/s",  "Gibit/s",  "Tibit/s",
                                     "kbit/s",  "Mbit/s",  "Gbit/s",  "Tbit/s" };
@@ -332,10 +336,10 @@ char *getrateunitprefix(int unitmode, int index)
 
 uint64_t getunitdivisor(int unitmode, int index)
 {
-	uint64_t unitdiv[] = { 0, 1024, 1048576, 1073741824, 1099511627776,
-                              1024, 1048576, 1073741824, 1099511627776,
-                              1024, 1048576, 1073741824, 1099511627776,
-                              1000, 1000000, 1000000000, 1000000000000};
+	uint64_t unitdiv[] = { 0, 1024, 1048576, 1073741824, 1099511627776ULL,
+                              1024, 1048576, 1073741824, 1099511627776ULL,
+                              1024, 1048576, 1073741824, 1099511627776ULL,
+                              1000, 1000000, 1000000000, 1000000000000ULL};
 
 	if (index>UNITPREFIXCOUNT) {
 		return unitdiv[0];
@@ -347,12 +351,12 @@ uint64_t getunitdivisor(int unitmode, int index)
 char *getratestring(uint64_t rate, int len, int declen, int unitmode)
 {
 	static char buffer[64];
-	uint64_t limit[3] = { 1024000, 1048576000, 1073741824000 };
+	uint64_t limit[3] = { 1024000, 1048576000, 1073741824000ULL };
 
 	if (cfg.rateunit == 1 && cfg.rateunitmode == 1) {
 		limit[0] = 1000000;
 		limit[1] = 1000000000;
-		limit[2] = 1000000000000;
+		limit[2] = 1000000000000ULL;
 	}
 
 	/* tune spacing according to unit */
@@ -363,13 +367,13 @@ char *getratestring(uint64_t rate, int len, int declen, int unitmode)
 
 	/* try to figure out what unit to use */
 	if (rate>=limit[2]) {
-		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)getunitdivisor(unitmode, 4), getrateunitprefix(unitmode, 4));
+		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)(getunitdivisor(unitmode, 4)), getrateunitprefix(unitmode, 4));
 	} else if (rate>=limit[1]) {
-		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)getunitdivisor(unitmode, 3), getrateunitprefix(unitmode, 3));
+		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)(getunitdivisor(unitmode, 3)), getrateunitprefix(unitmode, 3));
 	} else if (rate>=limit[0]) {
-		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)getunitdivisor(unitmode, 2), getrateunitprefix(unitmode, 2));
+		snprintf(buffer, 64, "%"DECCONV"*.2f %s", len, rate/(float)(getunitdivisor(unitmode, 2)), getrateunitprefix(unitmode, 2));
 	} else {
-		snprintf(buffer, 64, "%"DECCONV"*.*f %s", len, declen, rate/(float)getunitdivisor(unitmode, 1), getrateunitprefix(unitmode, 1));
+		snprintf(buffer, 64, "%"DECCONV"*.*f %s", len, declen, rate/(float)(getunitdivisor(unitmode, 1)), getrateunitprefix(unitmode, 1));
 	}
 
 	return buffer;

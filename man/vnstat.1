@@ -1,4 +1,4 @@
-.TH VNSTAT 1 "FEBRUARY 2017" "version 1.17" "User Manuals"
+.TH VNSTAT 1 "MARCH 2018" "version 1.18" "User Manuals"
 .SH NAME
 
 vnstat \- a console-based network traffic monitor
@@ -63,6 +63,7 @@ vnstat \- a console-based network traffic monitor
 .I nickname
 ] [
 .B \-\-oneline
+.I mode
 ] [
 .B \-\-query
 ] [
@@ -185,7 +186,7 @@ to the up script. These two options aren't needed when the daemon is used.
 .TP
 .B "--exportdb"
 Instead of showing the database with a formatted output, this output will
-dump the whole database in a plain text based architeture independent format.
+dump the whole database in a plain text based architecture independent format.
 The output can be imported back using the
 .B "--importdb"
 option and can be used for moving a database from one host to another. See the
@@ -195,7 +196,7 @@ the outputs of
 .B "--xml"
 and
 .B "--json"
-are likely to be more suitable. The dump uses ; as field delimeter.
+are likely to be more suitable. The dump uses ; as field delimiter.
 .TS
 l l.
       active;1	activity status
@@ -241,7 +242,7 @@ Import a database from
 which was previously exported using the
 .B "--exportdb"
 option. This can be used to transfer a database between different architectures and
-hosts, as the database is architecture dependant and not compatible between
+hosts, as the database is architecture dependent and not compatible between
 different architectures. First dump the database on one host, e.g. with
 .B "vnstat -i ppp0 --exportdb >ppp0db.txt"
 and then import the text file on a different host using
@@ -269,6 +270,13 @@ parameter can be used for limiting the output to only selected information.
 Everything is shown by default. Setting
 .I mode
 to 'h' will output only hours, 'd' days, 'm' months and 't' the top 10.
+This option can also be used in combination with
+.B "-l, --live"
+and
+.B "-tr"
+options without
+.I mode
+having any effect to the output.
 
 .TP
 .BI "-l, --live " mode
@@ -279,7 +287,10 @@ was more than 10 seconds. An optional
 parameter can be used to select between the displaying of packets per
 second (mode 0) and transfer counters (mode 1) during execution.
 .B "--style"
-can also be used to affect the layout of the output.
+can also be used to affect the layout of the output. The output will be in json
+format if used in combination with
+.B "--json"
+option.
 
 .TP
 .BI "--locale " locale
@@ -308,7 +319,7 @@ the set operation.
 .TP
 .B "--oneline"
 Show traffic summary for selected interface using one line with a parseable
-format. The output contains 15 fields with ; used as field delimeter. The 1st
+format. The output contains 15 fields with ; used as field delimiter. The 1st
 field contains the version information of the output that will be changed
 in future versions of vnStat if the field structure changes. The following
 fields in order 2) interface name, 3) timestamp for today, 4) rx for today,
@@ -316,6 +327,10 @@ fields in order 2) interface name, 3) timestamp for today, 4) rx for today,
 8) timestamp for current month, 9) rx for current month, 10) tx for current
 month, 11) total for current month, 12) average traffic rate for today,
 13) all time total rx, 14) all time total tx, 15) all time total traffic.
+An optional
+.I mode
+parameter can be used to force all fields to output in bytes without the
+unit itself shown.
 
 .TP
 .B "-q, --query"
@@ -372,7 +387,7 @@ mode.
 .B "--sync"
 Synchronize internal counters in the database with interface
 counters for the selected interface. Use this if the system is
-rebooted but interface counters aren't reseted. Such can occur
+rebooted but interface counters aren't reset. Such can occur
 when suspend to ram/disk is used. Not needed when the daemon is used.
 
 .TP
@@ -391,7 +406,10 @@ the given
 .I time
 seconds. The
 .I time
-will be 5 seconds if a number parameter isn't specified.
+will be 5 seconds if a number parameter isn't specified. The output will
+be in json format if used in combination with
+.B "--json"
+option. However, in that case, the countdown before results isn't shown.
 
 .TP
 .B "-u, --update"
