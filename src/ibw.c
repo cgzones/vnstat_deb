@@ -31,7 +31,7 @@ int ibwadd(const char *iface, const uint32_t limit)
 	/* add new node if list is empty */
 	if (p == NULL) {
 
-		n = malloc(sizeof(ibwnode));
+		n = (ibwnode *)malloc(sizeof(ibwnode));
 
 		if (n == NULL) {
 			return 0;
@@ -57,7 +57,7 @@ int ibwadd(const char *iface, const uint32_t limit)
 		}
 
 		/* add new node if not found */
-		n = malloc(sizeof(ibwnode));
+		n =  (ibwnode *)malloc(sizeof(ibwnode));
 
 		if (n == NULL) {
 			return 0;
@@ -183,7 +183,7 @@ int ibwcfgread(FILE *fd)
 {
 	char cfgline[512], name[512], value[512];
 	int i, j, linelen, count = 0;
-	int32_t ivalue;
+	long ivalue;
 
 	/* start from value search from first line */
 	rewind(fd);
@@ -258,10 +258,10 @@ int ibwcfgread(FILE *fd)
 		/* add interface and limit to list if value is within limits */
 		ivalue = strtol(value, (char **)NULL, 0);
 		if (ivalue<0 || ivalue>BWMAX) {
-			snprintf(errorstring, 512, "Invalid value \"%d\" for MaxBW%s, ignoring parameter.", ivalue, name);
+			snprintf(errorstring, 512, "Invalid value \"%ld\" for MaxBW%s, ignoring parameter.", ivalue, name);
 			printe(PT_Config);
 		} else {
-			ibwadd(name, ivalue);
+			ibwadd(name, (uint32_t)ivalue);
 		}
 	}
 

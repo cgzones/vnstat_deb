@@ -40,13 +40,13 @@ void daemonize(void)
 	pidfile = open(cfg.pidfile, O_RDWR|O_CREAT, 0644);
 	if (pidfile<0) {
 		perror("Error: pidfile");
-		snprintf(errorstring, 512, "opening pidfile \"%s\" failed (%s), exiting.", cfg.pidfile, strerror(errno));
+		snprintf(errorstring, 512, "opening pidfile \"%.473s\" failed (%s), exiting.", cfg.pidfile, strerror(errno));
 		printe(PT_Error);
 		exit(EXIT_FAILURE); /* can't open */
 	}
 	if (lockf(pidfile,F_TLOCK,0)<0) {
 		perror("Error: pidfile lock");
-		snprintf(errorstring, 512, "pidfile \"%s\" lock failed (%s), exiting.", cfg.pidfile, strerror(errno));
+		snprintf(errorstring, 512, "pidfile \"%.476s\" lock failed (%s), exiting.", cfg.pidfile, strerror(errno));
 		printe(PT_Error);
 		exit(EXIT_FAILURE); /* can't lock */
 	}
@@ -83,6 +83,8 @@ void daemonize(void)
 		exit(EXIT_FAILURE);
 	}
 
+	close(i);
+
 	umask(027); /* set newly created file permissions */
 
 	/* change running directory */
@@ -99,7 +101,7 @@ void daemonize(void)
 	/* record pid to pidfile */
 	if (write(pidfile,str,strlen(str)) < 0) {
 		perror("Error: write(pidfile)");
-		snprintf(errorstring, 512, "writing to pidfile %s failed, exiting.", cfg.pidfile);
+		snprintf(errorstring, 512, "writing to pidfile %.475s failed, exiting.", cfg.pidfile);
 		printe(PT_Error);
 		exit(EXIT_FAILURE);
 	}
@@ -173,7 +175,7 @@ int addinterfaces(const char *dirname, const int running)
 			}
 		} else {
 			if (debug)
-				printf("\%s\" added with %"PRIu32" Mbit bandwidth limit to cache.\n", interface, bwlimit);
+				printf("\"%s\" added with %"PRIu32" Mbit bandwidth limit to cache.\n", interface, bwlimit);
 			cacheadd(interface, 1);
 		}
 	}
@@ -300,7 +302,7 @@ void filldatabaselist(DSTATE *s)
 	struct dirent *di;
 
 	if ((dir=opendir(s->dirname))==NULL) {
-		snprintf(errorstring, 512, "Unable to access database directory \"%s\" (%s), exiting.", s->dirname, strerror(errno));
+		snprintf(errorstring, 512, "Unable to access database directory \"%.460s\" (%s), exiting.", s->dirname, strerror(errno));
 		printe(PT_Error);
 
 		/* clean daemon stuff before exit */
@@ -562,7 +564,7 @@ void handleintsignals(DSTATE *s)
 			break;
 
 		default:
-			snprintf(errorstring, 512, "Unkown signal %d received, ignoring.", intsignal);
+			snprintf(errorstring, 512, "Unknown signal %d received, ignoring.", intsignal);
 			printe(PT_Info);
 			break;
 	}
@@ -586,4 +588,78 @@ void preparedirs(DSTATE *s)
 	if (cfg.uselogging == 1) {
 		preparevnstatdir(cfg.logfile, s->user, s->group);
 	}
+}
+
+int waittimesync(DSTATE *s)
+{
+	char timestamp[22], timestamp2[22];
+
+	if (cfg.timesyncwait == 0) {
+		return 0;
+	}
+
+	if (s->prevdbupdate == 0 && s->prevdbsave == 0) {
+		s->datalist = dataptr;
+		while (s->datalist!=NULL) {
+			if (debug) {
+				printf("w: processing %s...\n", s->datalist->data.interface);
+			}
+
+			/* get data from cache if available */
+			if (!datalist_cacheget(s)) {
+				s->datalist = s->datalist->next;
+				continue;
+			}
+			cacheupdate();
+			if (debug) {
+				strftime(timestamp, 22, "%Y-%m-%d %H:%M:%S", localtime(&data.lastupdated));
+				printf("w: has %s\n", timestamp);
+			}
+			if (data.lastupdated > s->prevdbsave) {
+				s->prevdbsave = data.lastupdated;
+			}
+			s->datalist = s->datalist->next;
+		}
+	}
+
+	s->current = time(NULL);
+
+	if (debug) {
+		strftime(timestamp, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->current));
+		printf("current time:     %s\n", timestamp);
+		strftime(timestamp2, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->prevdbsave));
+		printf("latest db update: %s\n", timestamp2);
+	}
+
+	if (s->current < s->prevdbsave) {
+		if (s->prevdbupdate == 0) {
+			s->prevdbupdate = s->current;
+			strftime(timestamp, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->current));
+			strftime(timestamp2, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->prevdbsave));
+			snprintf(errorstring, 512, "Latest database update is in the future (db: %s > now: %s). Giving the system clock up to %d minutes to sync before continuing.", timestamp2, timestamp, cfg.timesyncwait);
+			printe(PT_Info);
+		}
+		if (s->current - s->prevdbupdate >= cfg.timesyncwait*60) {
+			strftime(timestamp, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->current));
+			strftime(timestamp2, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->prevdbsave));
+			snprintf(errorstring, 512, "Latest database update is still in the future (db: %s > now: %s), continuing. Some errors may follow.", timestamp2, timestamp);
+			printe(PT_Info);
+			return 0;
+		}
+	} else {
+		if (s->prevdbupdate != 0) {
+			strftime(timestamp, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->current));
+			strftime(timestamp2, 22, "%Y-%m-%d %H:%M:%S", localtime(&s->prevdbsave));
+			snprintf(errorstring, 512, "Latest database update is no longer in the future (db: %s <= now: %s), continuing.", timestamp2, timestamp);
+			printe(PT_Info);
+		}
+		s->prevdbsave = s->current;
+		s->prevdbupdate = 0;
+		if (debug) {
+			printf("time sync ok\n");
+		}
+		return 0;
+	}
+
+	return 1;
 }

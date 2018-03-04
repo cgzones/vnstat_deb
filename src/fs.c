@@ -23,7 +23,8 @@ int fileexists(const char *file)
 
 int mkpath(const char *dir, const mode_t mode)
 {
-	int i = 0, len = 0, ret = 1;
+	int ret = 1;
+	size_t i = 0, len = 0;
 	char *tmp = NULL;
 
 	if (!strlen(dir)) {
@@ -84,25 +85,25 @@ int mkpath(const char *dir, const mode_t mode)
 	return ret;
 }
 
-void preparevnstatdir(const char *file, const char *user, const char *group)
+void preparevnstatdir(const char *dir, const char *user, const char *group)
 {
-	int len, i, lastslash=0;
+	size_t i, len, lastslash=0;
 	char *path, *base;
 
-	if (file == NULL) {
+	if (dir == NULL) {
 		return;
 	}
 
-	len = strlen(file);
+	len = strlen(dir);
 	if (len<2) {
 		return;
 	}
 
-	if (file[len-1] == '/') {
+	if (dir[len-1] == '/') {
 		return;
 	}
 
-	path = strdup(file);
+	path = strdup(dir);
 	if (path == NULL) {
 		return;
 	}
@@ -115,7 +116,7 @@ void preparevnstatdir(const char *file, const char *user, const char *group)
 	}
 	free(path);
 
-	path = strdup(file);
+	path = strdup(dir);
 	if (path == NULL) {
 		return;
 	}
@@ -166,6 +167,7 @@ void updatedirownerid(const char *dir, const uid_t uid, const gid_t gid)
 	struct dirent *di;
 	struct stat statbuf;
 	char entryname[512];
+	int dir_fd, file_fd;
 
 	if (!cfg.updatefileowner) {
 		return;
@@ -177,14 +179,18 @@ void updatedirownerid(const char *dir, const uid_t uid, const gid_t gid)
 		return;
 	}
 
-	if (stat(dir, &statbuf)!=0) {
+	if ((dir_fd = open(dir, O_RDONLY | O_CLOEXEC)) == -1)
+		return;
+	if (fstat(dir_fd, &statbuf)!=0) {
+		close(dir_fd);
 		return;
 	}
 
 	if (statbuf.st_uid != uid || statbuf.st_gid != gid) {
-		if (chown(dir, uid, gid) != 0) {
+		if (fchown(dir_fd, uid, gid) != 0) {
 			if (debug)
 				printf("Error: updatedirowner() chown() \"%s\": %s\n", dir, strerror(errno));
+			close(dir_fd);
 			return;
 		} else {
 			if (debug)
@@ -192,9 +198,10 @@ void updatedirownerid(const char *dir, const uid_t uid, const gid_t gid)
 		}
 	}
 
-	if ((d=opendir(dir))==NULL) {
+	if ((d=fdopendir(dir_fd))==NULL) {
 		if (debug)
 			printf("Error: updatedirowner() diropen() \"%s\": %s\n", dir, strerror(errno));
+		close(dir_fd);
 		return;
 	}
 
@@ -203,11 +210,14 @@ void updatedirownerid(const char *dir, const uid_t uid, const gid_t gid)
 			continue;
 		}
 		snprintf(entryname, 512, "%s/%s", dir, di->d_name);
-		if (stat(entryname, &statbuf)!=0) {
+		if ((file_fd = open(entryname, O_RDONLY | O_CLOEXEC)) == -1)
+			continue;
+		if (fstat(file_fd, &statbuf)!=0) {
+			close(file_fd);
 			continue;
 		}
 		if (statbuf.st_uid != uid || statbuf.st_gid != gid) {
-			if (chown(entryname, uid, gid) != 0) {
+			if (fchown(file_fd, uid, gid) != 0) {
 				if (debug)
 					printf("Error: chown() \"%s\": %s\n", entryname, strerror(errno));
 			} else {
@@ -215,9 +225,11 @@ void updatedirownerid(const char *dir, const uid_t uid, const gid_t gid)
 					printf("\"%s\" chown completed\n", entryname);
 			}
 		}
+		close(file_fd);
 	}
 
 	closedir(d);
+	close(dir_fd);
 }
 
 void matchdbownerwithdirowner(const char *dir)

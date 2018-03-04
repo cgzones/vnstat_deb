@@ -1,3 +1,20 @@
+1.18 / 4-Mar-2018
+
+ - Fix: Misspellings, compiler warnings and possible error situations
+   (pull requests by Christian Göttsche)
+ - Hardening added to examples/systemd/vnstat.service
+   (pull request by Christian Göttsche)
+ - Add RTC sanity check and sync wait to daemon startup, the possible wait
+   duration can be configured using the TimeSyncWait keyword
+ - Add optional parameter to --oneline output for forcing fields to output
+   in bytes
+ - Add --json support for -l / --live and -tr outputs
+ - Number of decimals used in outputs can be configured using DefaultDecimals
+   and HourlyDecimals
+ - Add section separators for improving readabilty of the vnstat -h output,
+   configurable using HourlySectionStyle
+
+
 1.17 / 16-Feb-2017
 
  - Fix: --importdb was creating invalid databases since version 1.15

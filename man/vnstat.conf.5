@@ -1,4 +1,4 @@
-.TH VNSTAT.CONF 5 "FEBRUARY 2017" "version 1.17" "User Manuals"
+.TH VNSTAT.CONF 5 "MARCH 2018" "version 1.18" "User Manuals"
 .SH NAME
 
 vnstat.conf \- vnStat configuration file
@@ -25,7 +25,7 @@ will be used if a keyword can't be found from the configuration file.
 The configuration file is divided into three sections based on the
 usage of each keyword. The first section contains keywords that are
 considered generic for all commands, the second section is for
-daemon related keywords and the last section for image output.
+daemon related keywords and the last section is for image output.
 
 .SH COMMON KEYWORDS
 
@@ -36,7 +36,7 @@ Try to automatically detect
 value for each monitored interface. Mostly only ethernet interfaces support
 this feature.
 .B MaxBandwidth
-or interface specfic
+or interface specific
 .B MaxBW
 will be used as fallback value if detection fails.
 1 = enabled, 0 = disabled. (vnstat and vnstatd only)
@@ -61,6 +61,22 @@ A full path must be given and a leading '/' isn't required.
 Formatting of date in available outputs. Uses the same format as
 .BR date (1).
 (vnstat and vnstati only)
+
+.TP
+.B DefaultDecimals
+Number of decimals to use in outputs. Value range: 0..2
+(vnstat and vnstati only)
+
+.TP
+.B HourlyDecimals
+Number of decimals to use in hourly output. Value range: 0..2
+(vnstat only)
+
+.TP
+.B HourlySectionStyle
+Select what kind of spacer is used for separating the numerical sections of the
+hourly output. 0 = none, 1 = '|', 2 = '][', 3 = '[ ]'.
+(vnstat only)
 
 .TP
 .B Interface
@@ -227,6 +243,14 @@ when the availability of an interface changes, i.e., when an interface goes
 offline or comes online. 1 = enabled, 0 = disabled.
 
 .TP
+.B TimeSyncWait
+How many minutes to wait during daemon startup for system clock to sync if
+most recent database update appears to be in the future. This may be needed
+in systems without a real-time clock (RTC) which require some time after boot
+to query and set the correct time. 0 = wait disabled.
+Value range: 0..60
+
+.TP
 .B UpdateFileOwner
 Enable or disable the update of file ownership during daemon process startup
 or during manual creation of new databases. During daemon startup, only database,
@@ -308,7 +332,7 @@ Formatting of date in header. Uses the same format as
 
 .TP
 .B HourlyRate
-Show hours with rate instead of transfered amount. 1 = enabled, 0 = disabled.
+Show hours with rate instead of transferred amount. 1 = enabled, 0 = disabled.
 
 .TP
 .B SummaryLayout

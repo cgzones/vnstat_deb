@@ -1,5 +1,5 @@
 /*
-vnStat image output - Copyright (c) 2007-2016 Teemu Toivola <tst@iki.fi>
+vnStat image output - Copyright (c) 2007-2018 Teemu Toivola <tst@iki.fi>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 		for (currentarg=1; currentarg<argc; currentarg++) {
 			if ((strcmp(argv[currentarg],"-D")==0) || (strcmp(argv[currentarg],"--debug")==0)) {
 				debug = 1;
+				printf("Debug enabled, vnstati %s\n", VERSION);
 			} else if (strcmp(argv[currentarg],"--config")==0) {
 				if (currentarg+1<argc) {
 					strncpy_nt(p.cfgfile, argv[currentarg+1], 512);

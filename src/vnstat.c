@@ -1,5 +1,5 @@
 /*
-vnStat - Copyright (c) 2002-2016 Teemu Toivola <tst@iki.fi>
+vnStat - Copyright (c) 2002-2018 Teemu Toivola <tst@iki.fi>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
 		for (currentarg=1; currentarg<argc; currentarg++) {
 			if ((strcmp(argv[currentarg],"-D")==0) || (strcmp(argv[currentarg],"--debug")==0)) {
 				debug = 1;
+				printf("Debug enabled, vnstat %s\n", VERSION);
 			} else if (strcmp(argv[currentarg],"--config")==0) {
 				if (currentarg+1<argc) {
 					strncpy_nt(p.cfgfile, argv[currentarg+1], 512);
@@ -201,6 +202,18 @@ int main(int argc, char *argv[]) {
 			cfg.qmode=4;
 		} else if (strcmp(argv[currentarg],"--oneline")==0) {
 			cfg.qmode=9;
+			if (currentarg+1<argc && argv[currentarg+1][0]!='-') {
+				if (argv[currentarg+1][0]=='b') {
+					cfg.ostyle = 4;
+					currentarg++;
+				} else {
+					printf("Error: Invalid mode parameter \"%s\" for --oneline.\n", argv[currentarg+1]);
+					printf(" Valid parameters:\n");
+					printf("    (none) - automatically scaled units visible\n");
+					printf("    b      - all values in bytes\n");
+					return 1;
+				}
+			}
 		} else if (strcmp(argv[currentarg],"--xml")==0) {
 			if (currentarg+1<argc && argv[currentarg+1][0]!='-') {
 				p.xmlmode = argv[currentarg+1][0];
@@ -297,7 +310,7 @@ int main(int argc, char *argv[]) {
 			printcfgfile();
 			return 0;
 		} else if (strcmp(argv[currentarg],"--delete")==0) {
-			p.delete=1;
+			p.del=1;
 			p.query=0;
 		} else if (strcmp(argv[currentarg],"--iflist")==0) {
 			getiflist(&p.ifacelist, 1);
@@ -421,7 +434,7 @@ void initparams(PARAMS *p)
 	p->traffic = 0;
 	p->livetraffic = 0;
 	p->defaultiface = 1;
-	p->delete=0;
+	p->del=0;
 	p->livemode = 0;
 	p->ifacelist = NULL;
 	p->cfgfile[0] = '\0';
@@ -554,7 +567,7 @@ void handlecounterreset(PARAMS *p)
 	data.curtx=0;
 	writedb(p->interface, p->dirname, 0);
 	if (debug)
-		printf("Counters reseted for \"%s\"\n", data.interface);
+		printf("Counters reset for \"%s\"\n", data.interface);
 }
 
 void handleimport(PARAMS *p)
@@ -612,7 +625,7 @@ void handlecountersync(PARAMS *p)
 
 void handledelete(PARAMS *p)
 {
-	if (!p->delete) {
+	if (!p->del) {
 		return;
 	}
 
@@ -672,7 +685,7 @@ void handlerebuildtotal(PARAMS *p)
 		rebuilddbtotal(p->interface, p->dirname);
 		p->query=0;
 	} else {
-		printf("Warning:\nThe current option would rebuild total tranfers for \"%s\".\n", p->interface);
+		printf("Warning:\nThe current option would rebuild total transfers for \"%s\".\n", p->interface);
 		printf("Use --force in order to really do that.\n");
 		exit(EXIT_FAILURE);
 	}

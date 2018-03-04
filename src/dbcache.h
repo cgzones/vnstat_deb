@@ -8,7 +8,7 @@ typedef struct datanode {
 	struct datanode *next;
 } datanode;
 
-int cacheadd(const char *iface, int sync);
+int cacheadd(const char *iface, short sync);
 datanode *cacheremove(const char *iface);
 int cacheupdate(void);
 void cacheshow(void);
@@ -18,9 +18,9 @@ void cacheflush(const char *dirname);
 int cachecount(void);
 int cacheactivecount(void);
 uint32_t dbcheck(uint32_t dbhash, int *forcesave);
-uint32_t simplehash(const char *data, int len);
+uint32_t simplehash(const char *input, int len);
 
 /* global variables */
-datanode *dataptr;
+extern datanode *dataptr;
 
 #endif

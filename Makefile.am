@@ -96,6 +96,13 @@ profile:
 
 myclean: maintainer-clean
 
+mancheck:
+	@echo "Testing man pages for errors and warnings"
+	@for m in $(dist_man_MANS); do \
+	echo " * $$m"; \
+	LC_ALL=en_US.UTF-8 MANROFFSEQ='' MANWIDTH=80 man --warnings -E UTF-8 -l -Tutf8 -Z $(srcdir)/$$m >/dev/null; \
+	done
+
 release: distcheck
 	tar zxf $(PACKAGE_NAME)-$(PACKAGE_VERSION).tar.gz
 	rm -f $(PACKAGE_NAME)-$(PACKAGE_VERSION).tar.gz
@@ -103,7 +110,7 @@ release: distcheck
 	rm -fr $(PACKAGE_NAME)-$(PACKAGE_VERSION)
 	ls -l $(PACKAGE_NAME)-$(PACKAGE_VERSION).tar.gz
 
-install-data-hook:
+install-data-hook: install-exec
 	$(MKDIR_P) $(DESTDIR)$(sysconfdir)
 if IS_CROSSCOMPILED
 	if [ ! -f $(DESTDIR)$(sysconfdir)/vnstat.conf ]; \
