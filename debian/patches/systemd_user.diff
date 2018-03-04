@@ -7,14 +7,14 @@ Subject: Run vnstatd as user vnstat
  1 file changed, 1 insertion(+)
 
 diff --git a/examples/systemd/vnstat.service b/examples/systemd/vnstat.service
-index 1d898f5..057fa56 100644
+index 9a39994..d51c45c 100644
 --- a/examples/systemd/vnstat.service
 +++ b/examples/systemd/vnstat.service
-@@ -6,6 +6,7 @@ After=network.target
- [Service]
+@@ -7,6 +7,7 @@ After=network.target
  ExecStart=/usr/sbin/vnstatd -n
  ExecReload=/bin/kill -HUP $MAINPID
+ Restart=on-failure
 +User=vnstat
  
- [Install]
- WantedBy=multi-user.target
+ # Hardening
+ ProtectSystem=strict

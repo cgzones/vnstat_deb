@@ -1,8 +1,9 @@
 vnstat (1.18-1) UNRELEASED; urgency=medium
 
   * New upstream version 1.18
+  * debian/patches: rebase and drop upstream applied ones
 
- -- Christian Göttsche <cgzones@googlemail.com>  Sun, 04 Mar 2018 21:06:43 +0100
+ -- Christian Göttsche <cgzones@googlemail.com>  Sun, 04 Mar 2018 21:11:33 +0100
 
 vnstat (1.17-2) unstable; urgency=medium
 

@@ -3,21 +3,18 @@ Date: Thu, 24 Aug 2017 13:44:26 +0200
 Subject: fix Wimplicit-function-declaration on kFreeBSD
 
 ---
- src/misc.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ src/misc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/src/misc.c b/src/misc.c
-index 9842448..5a6ef63 100644
+index 311977b..6b7542d 100644
 --- a/src/misc.c
 +++ b/src/misc.c
-@@ -1,6 +1,10 @@
- #if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) && !defined(__APPLE__) && !defined(__FreeBSD_kernel__)
- #define _XOPEN_SOURCE 600
- #endif
-+/* enable wcswidth on kFreeBSD */
-+#if defined(__FreeBSD_kernel__) && defined(__GLIBC__)
+@@ -4,6 +4,7 @@
+ /* enable wcswidth on kFreeBSD */
+ #if defined(__FreeBSD_kernel__) && defined(__GLIBC__)
+ #define __USE_XOPEN
 +#define _XOPEN_SOURCE
-+#endif
+ #endif
  #include "common.h"
  #include "misc.h"
- #include <wchar.h>

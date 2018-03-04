@@ -7,14 +7,14 @@ Subject: vnstat.service: add 3s timeout for auto-restart
  1 file changed, 1 insertion(+)
 
 diff --git a/examples/systemd/vnstat.service b/examples/systemd/vnstat.service
-index aedc072..c1ac051 100644
+index d51c45c..a32e342 100644
 --- a/examples/systemd/vnstat.service
 +++ b/examples/systemd/vnstat.service
 @@ -8,6 +8,7 @@ ExecStart=/usr/sbin/vnstatd -n
  ExecReload=/bin/kill -HUP $MAINPID
- User=vnstat
  Restart=on-failure
+ User=vnstat
 +RestartSec=3
  
  # Hardening
- #  (all but PrivateNetwork)
+ ProtectSystem=strict

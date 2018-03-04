@@ -1,7 +1,4 @@
 pidfile_path.diff
 systemd_user.diff
-0003-spelling-fixes.patch
-0004-Makefile.am-install-data-hook-depends-on-install-exe.patch
 0009-fix-Wimplicit-function-declaration-on-kFreeBSD.patch
-0006-vnstat.service-add-hardening-options.patch
 0007-vnstat.service-add-3s-timeout-for-auto-restart.patch

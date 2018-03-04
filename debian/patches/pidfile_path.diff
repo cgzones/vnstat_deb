@@ -7,10 +7,10 @@ Subject: Adjust PidFile path to the new location
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/cfg/vnstat.conf b/cfg/vnstat.conf
-index c127b29..a99420a 100644
+index 0ec7978..ca70b57 100644
 --- a/cfg/vnstat.conf
 +++ b/cfg/vnstat.conf
-@@ -118,7 +118,7 @@ UpdateFileOwner 1
+@@ -129,7 +129,7 @@ UpdateFileOwner 1
  LogFile "/var/log/vnstat/vnstat.log"
  
  # file used as daemon pid / lock file
